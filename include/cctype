@@ -1,0 +1,44 @@
+// cctype
+// The 13 <cctype> functions of ILIBC-CTP-001 section 5.3, adapted to the
+// namespace macros of ILIBC-HDR-001 section 3.4 (ILIBC-CTP-001 section 6.1).
+// Header-only: constexpr inline functions, no macros, no .cpp, no link symbols.
+#pragma once
+
+#include <ilibc/config.hpp>
+
+namespace ilibc::detail {
+
+// True when lo <= c <= hi. Safe for any int c (compared as unsigned).
+constexpr bool in_range(int c, int lo, int hi) noexcept {
+    return static_cast<unsigned>(c) - static_cast<unsigned>(lo)
+           <= static_cast<unsigned>(hi - lo);
+}
+
+}  // namespace ilibc::detail
+
+ILIBC_NS_BEGIN
+
+[[nodiscard]] constexpr bool isupper(int c) noexcept { return ilibc::detail::in_range(c, 'A', 'Z'); }
+[[nodiscard]] constexpr bool islower(int c) noexcept { return ilibc::detail::in_range(c, 'a', 'z'); }
+[[nodiscard]] constexpr bool isdigit(int c) noexcept { return ilibc::detail::in_range(c, '0', '9'); }
+
+[[nodiscard]] constexpr bool isalpha(int c) noexcept { return isupper(c) || islower(c); }
+[[nodiscard]] constexpr bool isalnum(int c) noexcept { return isalpha(c) || isdigit(c); }
+
+[[nodiscard]] constexpr bool isxdigit(int c) noexcept {
+    return isdigit(c) || ilibc::detail::in_range(c, 'A', 'F') || ilibc::detail::in_range(c, 'a', 'f');
+}
+[[nodiscard]] constexpr bool isspace(int c) noexcept {
+    return c == ' ' || ilibc::detail::in_range(c, 0x09, 0x0D);
+}
+[[nodiscard]] constexpr bool iscntrl(int c) noexcept {
+    return ilibc::detail::in_range(c, 0x00, 0x1F) || c == 0x7F;
+}
+[[nodiscard]] constexpr bool isprint(int c) noexcept { return ilibc::detail::in_range(c, 0x20, 0x7E); }
+[[nodiscard]] constexpr bool isgraph(int c) noexcept { return ilibc::detail::in_range(c, 0x21, 0x7E); }
+[[nodiscard]] constexpr bool ispunct(int c) noexcept { return isgraph(c) && !isalnum(c); }
+
+[[nodiscard]] constexpr int tolower(int c) noexcept { return isupper(c) ? c + ('a' - 'A') : c; }
+[[nodiscard]] constexpr int toupper(int c) noexcept { return islower(c) ? c - ('a' - 'A') : c; }
+
+ILIBC_NS_END

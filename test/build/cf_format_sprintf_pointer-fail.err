@@ -1,0 +1,12 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_format_sprintf_pointer.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_format_sprintf_pointer.cpp:13:31: error: no matching function for call to ‘sprintf<"a">(char*&)’
+   13 |     return ilibc::sprintf<"a">(p);
+      |            ~~~~~~~~~~~~~~~~~~~^~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_format_sprintf_pointer.cpp:6:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/format.hpp:372:5: note: candidate: ‘template<fixed_string<...auto...> F, unsigned int N, class ... Args> int ilibc::sprintf(char (&)[N], Args&& ...)’
+  372 | int sprintf(char (&dst)[N], Args &&...args) noexcept {
+      |     ^~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/format.hpp:372:5: note:   template argument deduction/substitution failed:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_format_sprintf_pointer.cpp:13:31: note:   mismatched types ‘char [N]’ and ‘char*’
+   13 |     return ilibc::sprintf<"a">(p);
+      |            ~~~~~~~~~~~~~~~~~~~^~~

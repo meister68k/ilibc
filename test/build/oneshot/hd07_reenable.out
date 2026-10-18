@@ -1,0 +1,1 @@
+ASSERT expr=1 == 2 file=/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/oneshot/hd07_reenable.cpp line=25

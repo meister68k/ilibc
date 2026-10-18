@@ -1,0 +1,8 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_strcmp_null.cpp:11:39: error: non-constant condition for static assertion
+   11 | static_assert(t::strcmp(nullptr, "a") == 0);
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_strcmp_null.cpp:5:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_strcmp_null.cpp:11:24:   in ‘constexpr’ expansion of ‘std::strcmp(0, ((const char*)"a"))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstring:99:16: error: dereferencing a null pointer
+   99 |     while (s1[i] != '\0' && s1[i] == s2[i]) { ++i; }
+      |            ~~~~^

@@ -1,0 +1,12 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_format_arg_count.cpp:5:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/format.hpp: In instantiation of ‘constexpr void ilibc::detail::check_format() [with fixed_string<...auto...> F = fixed_string<4>{"a%d"}; Args = {}]’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/format.hpp:349:37:   required from ‘int ilibc::snprint_f(char*, std::size_t, Args&& ...) [with fixed_string<...auto...> F = detail::fixed_string<4>{"a%d"}; Args = {}; std::size_t = unsigned int]’
+  349 |     detail::check_format<F, Args...>();
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_format_arg_count.cpp:11:35:   required from here
+   11 |     return ilibc::snprint_f<"a%d">(buf, sizeof buf);
+      |            ~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/format.hpp:330:45: error: static assertion failed: ilibc: format conversion count does not match arguments
+  330 |     static_assert(format_check<F, Args...>::count_ok,
+      |                                             ^~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/format.hpp:330:45: note: ‘ilibc::detail::format_check<ilibc::detail::fixed_string<4>{"a%d"}>::count_ok’ evaluates to false

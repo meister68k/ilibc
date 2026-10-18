@@ -1,0 +1,1 @@
+ASSERT expr=n == 0 || gap >= static_cast<std::uintptr_t>(n) file=/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memcpy.cpp line=18

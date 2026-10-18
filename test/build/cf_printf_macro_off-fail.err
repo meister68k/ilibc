@@ -1,0 +1,8 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_printf_macro_off.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_printf_macro_off.cpp:11:21: error: ‘printf’ was not declared in this scope
+   11 | int main() { return printf("x=%d", 1); }
+      |                     ^~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_printf_macro_off.cpp:11:1: note: ‘printf’ is defined in header ‘<cstdio>’; this is probably fixable by adding ‘#include <cstdio>’
+   10 | #include <cstdio>
+  +++ |+#include <cstdio>
+   11 | int main() { return printf("x=%d", 1); }

@@ -1,0 +1,65 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/string_mem.hpp
+        -:    1:// ilibc/string_mem.hpp
+        -:    2:// Byte-pointer cores of the five mem* functions and the memchr base body
+        -:    3:// (ILIBC-STR-001 sections 2.4, 5.1, 7.2). Internal header, pulled in by
+        -:    4:// <cstring>; users must not include it directly (ILIBC-HDR-001 section 2.1).
+        -:    5:#pragma once
+        -:    6:
+        -:    7:#include <ilibc/config.hpp>
+        -:    8:#include <cstddef>
+        -:    9:
+        -:   10:namespace ilibc::detail {
+        -:   11:
+        -:   12:// Copy the first n bytes from s to d, front to back (section 5.1). Overlapping
+        -:   13:// ranges give unspecified results; memmove selects this core or mem_copy_bwd.
+    1221*:   14:constexpr void mem_copy_fwd(unsigned char *d, const unsigned char *s, std::size_t n) noexcept {
+   20722*:   15:    for (std::size_t i = 0; i < n; ++i) { d[i] = s[i]; }
+    1221*:   16:}
+------------------
+_ZN5ilibc6detail12mem_copy_fwdEPhPKhj:
+     1221:   14:constexpr void mem_copy_fwd(unsigned char *d, const unsigned char *s, std::size_t n) noexcept {
+    20722:   15:    for (std::size_t i = 0; i < n; ++i) { d[i] = s[i]; }
+     1221:   16:}
+------------------
+_ZN5ilibc6detail12mem_copy_fwdEPhPKhj:
+    #####:   14:constexpr void mem_copy_fwd(unsigned char *d, const unsigned char *s, std::size_t n) noexcept {
+    #####:   15:    for (std::size_t i = 0; i < n; ++i) { d[i] = s[i]; }
+    #####:   16:}
+------------------
+        -:   17:
+        -:   18:// Copy the first n bytes from s to d, back to front (section 5.1). Used when
+        -:   19:// d > s so that a source byte is read before any copy overwrites it.
+     1058:   20:constexpr void mem_copy_bwd(unsigned char *d, const unsigned char *s, std::size_t n) noexcept {
+    17970:   21:    while (n > 0) { --n; d[n] = s[n]; }
+     1058:   22:}
+        -:   23:
+        -:   24:// Compare the first n bytes as unsigned char; returns the difference of the
+        -:   25:// first differing bytes, 0 when equal or n is 0 (sections 4.4, 5.1).
+       66:   26:constexpr int mem_compare(const unsigned char *a, const unsigned char *b, std::size_t n) noexcept {
+      208:   27:    for (std::size_t i = 0; i < n; ++i) {
+      199:   28:        if (a[i] != b[i]) { return static_cast<int>(a[i]) - static_cast<int>(b[i]); }
+        -:   29:    }
+        9:   30:    return 0;
+        -:   31:}
+        -:   32:
+        -:   33:// Return the address of the first byte equal to c within the first n bytes,
+        -:   34:// or nullptr when there is none (n == 0 included) (section 5.1).
+       67:   35:constexpr const unsigned char *mem_find(const unsigned char *s, unsigned char c,
+        -:   36:                                        std::size_t n) noexcept {
+      462:   37:    for (std::size_t i = 0; i < n; ++i) {
+      450:   38:        if (s[i] == c) { return s + i; }
+        -:   39:    }
+       12:   40:    return nullptr;
+        -:   41:}
+        -:   42:
+        -:   43:// Set the first n bytes to c (section 5.1).
+       12:   44:constexpr void mem_fill(unsigned char *d, unsigned char c, std::size_t n) noexcept {
+      830:   45:    for (std::size_t i = 0; i < n; ++i) { d[i] = c; }
+       12:   46:}
+        -:   47:
+        -:   48:// Base body of memchr: the asm label fixes the C link name "memchr", so the
+        -:   49:// two std:: overloads stay wrappers (ILIBC-STR-001 section 7.2). Defined in
+        -:   50:// src/string/memchr.cpp with -fno-tree-loop-distribute-patterns (section 3).
+        -:   51:void *memchr_base(const void *s, int c, std::size_t n) noexcept ILIBC_ASM_LABEL("memchr");
+        -:   52:
+        -:   53:}  // namespace ilibc::detail

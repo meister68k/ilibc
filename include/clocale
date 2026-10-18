@@ -1,0 +1,7 @@
+// <clocale>  (stub)
+#pragma once
+#if defined(ILIBC_STUB_PASSTHROUGH)
+#  include_next <clocale>
+#else
+#  error "ilibc: <clocale> is not provided (only the C locale). See ILIBC-OVR-001 section 4.3."
+#endif

@@ -1,0 +1,174 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp
+        -:    1:// ilibc/stdlib.hpp
+        -:    2:// The integer-parsing core (detail), the err-returning extensions of
+        -:    3:// ILIBC-STL-001 section 2.3, and the non-standard extension ilibc::_itoa_s
+        -:    4:// (sections 2.5, 4.5). Internal header, pulled in by <cstdlib>; users must
+        -:    5:// not include it directly (ILIBC-HDR-001 section 2.1). Header-only: all
+        -:    6:// functions are constexpr inline, no .cpp, no link symbols.
+        -:    7:#pragma once
+        -:    8:
+        -:    9:#include <ilibc/config.hpp>
+        -:   10:#include <cctype>
+        -:   11:#include <cerrno>
+        -:   12:#include <climits>
+        -:   13:#include <cstddef>
+        -:   14:
+        -:   15:namespace ilibc::detail {
+        -:   16:
+        -:   17:// Result of the shared conversion scan (ILIBC-STL-001 section 5.1).
+        -:   18:struct parse_result {
+        -:   19:    unsigned long magnitude;   // absolute value; indeterminate when overflow is set
+        -:   20:    const char   *end;         // one past the last converted digit; input head when none
+        -:   21:    bool          negative;    // the sign was '-'
+        -:   22:    bool          overflow;    // the magnitude did not fit in unsigned long
+        -:   23:};
+        -:   24:
+        -:   25:// Digit value of c; 36 (greater than any valid base) when c is not a digit.
+ 37322479:   26:constexpr int digit_value(char c) noexcept {
+ 37322479:   27:    if (c >= '0' && c <= '9') { return c - '0'; }
+ 12742157:   28:    if (c >= 'a' && c <= 'z') { return c - 'a' + 10; }
+  3641552:   29:    if (c >= 'A' && c <= 'Z') { return c - 'A' + 10; }
+  3641291:   30:    return 36;
+        -:   31:}
+        -:   32:
+        -:   33:// Shared scan of leading whitespace, at most one sign, an optional 0x/0
+        -:   34:// prefix (base 0 or 16), and the digit run (ILIBC-STL-001 section 4.2).
+        -:   35:// Overflow is decided BEFORE the multiply that could wrap (section 5.3):
+        -:   36:// once the digit run overflows, the magnitude is frozen but digits keep
+        -:   37:// being consumed so that end still lands past the last valid digit.
+  3642161:   38:constexpr parse_result parse_integer(const char *s, int base) noexcept {
+  3642161:   39:    parse_result r = { 0UL, s, false, false };                  // default: no conversion
+  3642161:   40:    if (base < 0 || base == 1 || base > 36) { return r; }       // invalid base: no error (D-L1)
+        -:   41:
+  3642151:   42:    std::size_t i = 0;
+  3642183:   43:    while (ILIBC_NS::isspace(s[i])) { ++i; }                    // leading whitespace (C locale)
+  3642151:   44:    if (s[i] == '+' || s[i] == '-') { r.negative = (s[i] == '-'); ++i; }
+        -:   45:
+        -:   46:    // Prefix handling: 0x/0X only for base 0 or 16, and only when a hex
+        -:   47:    // digit follows; a bare "0x" keeps the "0" as the conversion (4.2).
+  3642151:   48:    if ((base == 0 || base == 16) && s[i] == '0' && (s[i + 1] == 'x' || s[i + 1] == 'X')
+  7284302:   49:        && digit_value(s[i + 2]) < 16) {
+        3:   50:        i += 2;
+        3:   51:        base = 16;
+  3642148:   52:    } else if (base == 0) {
+        9:   53:        base = (s[i] == '0') ? 8 : 10;
+        -:   54:    }
+        -:   55:
+        -:   56:    // Digit run: s[i] is read at most up to the terminator (s[i+2] is only
+        -:   57:    // read when s[i+1] is 'x'/'X', so the string has at least that byte).
+  3642151:   58:    const unsigned long b     = static_cast<unsigned long>(base);
+  3642151:   59:    const unsigned long limit = ULONG_MAX / b;                  // largest value that can take one more digit
+  3642151:   60:    const unsigned long last  = ULONG_MAX % b;                  // largest last digit at that value
+  3642151:   61:    bool any = false;
+ 33680323:   62:    for (;; ++i) {
+ 37322474:   63:        const int d = digit_value(s[i]);
+ 37322474:   64:        if (d >= base) { break; }
+ 33680323:   65:        any = true;
+ 33680323:   66:        const unsigned long dv = static_cast<unsigned long>(d);
+ 33680323:   67:        if (r.overflow || r.magnitude > limit || (r.magnitude == limit && dv > last)) {
+       48:   68:            r.overflow = true;                                  // keep scanning; freeze the value
+        -:   69:        } else {
+ 33680275:   70:            r.magnitude = r.magnitude * b + dv;
+        -:   71:        }
+ 33680323:   72:    }
+  3642151:   73:    if (any) { r.end = s + i; }
+  3642151:   74:    return r;
+        -:   75:}
+        -:   76:
+        -:   77:}  // namespace ilibc::detail
+        -:   78:
+        -:   79:namespace ilibc {
+        -:   80:
+        -:   81:// strtol with an explicit error sink (ILIBC-STL-001 section 2.3).
+        -:   82:// Writes *err only on range overflow; errno is never touched. The negative
+        -:   83:// range admits |LONG_MIN| = LONG_MAX + 1 via unsigned negation, so
+        -:   84:// "-2147483648" is in range while "2147483648" is ERANGE (sections 5.2, 5.3).
+   105291:   85:constexpr long strtol(ILIBC_NONNULL const char *nptr, char **endptr, int base, int *err) noexcept {
+   105291:   86:    const detail::parse_result r = detail::parse_integer(nptr, base);
+   105291:   87:    if (endptr != nullptr) { *endptr = const_cast<char *>(r.end); }
+        -:   88:
+   105291:   89:    constexpr unsigned long max_pos = static_cast<unsigned long>(LONG_MAX);
+   105291:   90:    const unsigned long limit = r.negative ? max_pos + 1UL : max_pos;  // allow |LONG_MIN| when negative
+   105291:   91:    if (r.overflow || r.magnitude > limit) {
+       90:   92:        if (err != nullptr) { *err = ILIBC_ERANGE; }
+       90:   93:        return r.negative ? LONG_MIN : LONG_MAX;
+        -:   94:    }
+   105201:   95:    return r.negative ? static_cast<long>(0UL - r.magnitude)     // negate unsigned, then convert (C++20 two's complement)
+   105201:   96:                      : static_cast<long>(r.magnitude);
+        -:   97:}
+        -:   98:
+        -:   99:// strtoul with an explicit error sink (ILIBC-STL-001 section 2.3). A
+        -:  100:// leading '-' negates the magnitude modulo 2^32; only a magnitude larger
+        -:  101:// than ULONG_MAX itself is ERANGE (section 4.2 rule 7).
+  3536870:  102:constexpr unsigned long strtoul(ILIBC_NONNULL const char *nptr, char **endptr, int base,
+        -:  103:                                int *err) noexcept {
+  3536870:  104:    const detail::parse_result r = detail::parse_integer(nptr, base);
+  3536870:  105:    if (endptr != nullptr) { *endptr = const_cast<char *>(r.end); }
+        -:  106:
+  3536870:  107:    if (r.overflow) {
+       38:  108:        if (err != nullptr) { *err = ILIBC_ERANGE; }
+       38:  109:        return ULONG_MAX;
+        -:  110:    }
+  3536832:  111:    return r.negative ? 0UL - r.magnitude : r.magnitude;         // unsigned negation
+        -:  112:}
+        -:  113:
+        -:  114:// atol with an explicit error sink: identical to strtol base 10 (4.3).
+        7:  115:constexpr long atol(ILIBC_NONNULL const char *nptr, int *err) noexcept {
+        7:  116:    return ilibc::strtol(nptr, nullptr, 10, err);
+        -:  117:}
+        -:  118:
+        -:  119:// atoi with an explicit error sink: the strtol base-10 result narrowed to
+        -:  120:// int; identical range on ILP32, enforced by config.hpp (4.3).
+      526:  121:constexpr int atoi(ILIBC_NONNULL const char *nptr, int *err) noexcept {
+      526:  122:    return static_cast<int>(ilibc::strtol(nptr, nullptr, 10, err));
+        -:  123:}
+        -:  124:
+        -:  125:// Safe integer-to-string conversion (ILIBC-STL-001 section 4.5). Argument
+        -:  126:// checks are part of the specification (not undefined behaviour) and are
+        -:  127:// evaluated in a fixed order: (1) null buffer or zero size leaves the
+        -:  128:// buffer untouched, (2) a bad radix empties buffer[0], (3) a too-small
+        -:  129:// buffer empties buffer[0] and nothing else. errno is never touched, so
+        -:  130:// even failing inputs stay evaluable in constant expressions.
+  3640785:  131:[[nodiscard]] constexpr int _itoa_s(int value, char *buffer, std::size_t size, int radix) noexcept {
+  3640785:  132:    if (buffer == nullptr || size == 0) {                        // 1: argument error; do not touch buffer
+        4:  133:        return ILIBC_EINVAL;
+        -:  134:    }
+  3640781:  135:    if (radix < 2 || radix > 36) {                               // 2: radix error
+        1:  136:        buffer[0] = '\0';
+        1:  137:        return ILIBC_EINVAL;
+        -:  138:    }
+        -:  139:
+  3640780:  140:    const bool negative = (radix == 10 && value < 0);            // '-' only for decimal negatives
+  3640780:  141:    unsigned magnitude = static_cast<unsigned>(value);           // two's-complement bit pattern
+  3640780:  142:    if (negative) { magnitude = 0U - magnitude; }                // absolute value; handles INT_MIN
+  3640780:  143:    const unsigned base = static_cast<unsigned>(radix);
+        -:  144:
+  3640780:  145:    std::size_t digits = 1;                                      // digit count; zero is one digit
+ 33677054:  146:    for (unsigned t = magnitude; t >= base; t /= base) { ++digits; }
+  3640780:  147:    const std::size_t length = digits + (negative ? 1U : 0U);    // characters excluding the terminator
+        -:  148:
+  3640780:  149:    if (size < length + 1) {                                     // 3: buffer too small
+        2:  150:        buffer[0] = '\0';
+        2:  151:        return ILIBC_ERANGE;
+        -:  152:    }
+        -:  153:
+  3640778:  154:    buffer[length] = '\0';
+  3640778:  155:    const std::size_t first = negative ? 1U : 0U;
+ 37317819:  156:    for (std::size_t i = length; i > first; ) {                  // write digits back to front
+ 33677041:  157:        --i;
+ 33677041:  158:        const unsigned d = magnitude % base;
+ 33677041:  159:        buffer[i] = static_cast<char>(d < 10U ? '0' + d : 'a' + (d - 10U));
+ 33677041:  160:        magnitude /= base;
+        -:  161:    }
+  3640778:  162:    if (negative) { buffer[0] = '-'; }
+  3640778:  163:    return 0;
+        -:  164:}
+        -:  165:
+        -:  166:// Array form: the buffer size comes from the array type (section 2.5 #2).
+        -:  167:// Only char arrays match; unsigned char / signed char arrays are errors.
+        -:  168:template <std::size_t N>
+        -:  169:[[nodiscard]] constexpr int _itoa_s(int value, char (&buffer)[N], int radix) noexcept {
+        -:  170:    return ilibc::_itoa_s(value, buffer, N, radix);
+        -:  171:}
+        -:  172:
+        -:  173:}  // namespace ilibc

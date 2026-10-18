@@ -1,0 +1,28 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_ambiguous.cpp:9:23: error: call of overloaded ‘abs(long long int)’ is ambiguous
+    9 | static_assert(std::abs(1LL) == 1);
+      |               ~~~~~~~~^~~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_ambiguous.cpp:5:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:29:29: note: candidate: ‘constexpr int std::abs(int)’
+   29 | [[nodiscard]] constexpr int abs(int j) noexcept { return j < 0 ? -j : j; }
+      |                             ^~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:32:30: note: candidate: ‘constexpr long int std::abs(long int)’
+   32 | [[nodiscard]] constexpr long abs(long j) noexcept { return j < 0 ? -j : j; }
+      |                              ^~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_ambiguous.cpp:10:23: error: call of overloaded ‘abs(unsigned int)’ is ambiguous
+   10 | static_assert(std::abs(1U) == 1U);
+      |               ~~~~~~~~^~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:29:29: note: candidate: ‘constexpr int std::abs(int)’
+   29 | [[nodiscard]] constexpr int abs(int j) noexcept { return j < 0 ? -j : j; }
+      |                             ^~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:32:30: note: candidate: ‘constexpr long int std::abs(long int)’
+   32 | [[nodiscard]] constexpr long abs(long j) noexcept { return j < 0 ? -j : j; }
+      |                              ^~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_ambiguous.cpp:11:23: error: call of overloaded ‘abs(double)’ is ambiguous
+   11 | static_assert(std::abs(1.0) == 1.0);
+      |               ~~~~~~~~^~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:29:29: note: candidate: ‘constexpr int std::abs(int)’
+   29 | [[nodiscard]] constexpr int abs(int j) noexcept { return j < 0 ? -j : j; }
+      |                             ^~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:32:30: note: candidate: ‘constexpr long int std::abs(long int)’
+   32 | [[nodiscard]] constexpr long abs(long j) noexcept { return j < 0 ? -j : j; }
+      |                              ^~~

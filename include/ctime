@@ -1,0 +1,7 @@
+// <ctime>  (stub)
+#pragma once
+#if defined(ILIBC_STUB_PASSTHROUGH)
+#  include_next <ctime>
+#else
+#  error "ilibc: <ctime> is not provided (no clock). See ILIBC-OVR-001 section 4.3."
+#endif

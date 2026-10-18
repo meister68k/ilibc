@@ -1,0 +1,1 @@
+ASSERT expr=3 * 3 == 8 file=/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/oneshot/hd07_ilibase_independent.cpp line=18

@@ -1,0 +1,55 @@
+. /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstring
+.. /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/config.hpp
+... /usr/include/c++/14/climits
+.... /tmp/opencode/sysroot/usr/include/x86_64-linux-gnu/c++/14/32/bits/c++config.h
+..... /tmp/opencode/sysroot/usr/include/x86_64-linux-gnu/c++/14/32/bits/os_defines.h
+...... /usr/include/features.h
+....... /usr/include/features-time64.h
+........ /usr/include/x86_64-linux-gnu/bits/wordsize.h
+........ /usr/include/x86_64-linux-gnu/bits/timesize.h
+......... /usr/include/x86_64-linux-gnu/bits/wordsize.h
+....... /usr/include/stdc-predef.h
+....... /usr/include/x86_64-linux-gnu/sys/cdefs.h
+........ /usr/include/x86_64-linux-gnu/bits/wordsize.h
+........ /usr/include/x86_64-linux-gnu/bits/long-double.h
+....... /usr/include/x86_64-linux-gnu/gnu/stubs.h
+........ /tmp/opencode/sysroot/usr/include/x86_64-linux-gnu/gnu/stubs-32.h
+..... /tmp/opencode/sysroot/usr/include/x86_64-linux-gnu/c++/14/32/bits/cpu_defines.h
+..... /usr/include/c++/14/pstl/pstl_config.h
+.... /usr/lib/gcc/x86_64-linux-gnu/14/include/limits.h
+..... /usr/lib/gcc/x86_64-linux-gnu/14/include/syslimits.h
+...... /usr/lib/gcc/x86_64-linux-gnu/14/include/limits.h
+....... /usr/include/limits.h
+........ /usr/include/x86_64-linux-gnu/bits/libc-header-start.h
+........ /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
+......... /usr/include/x86_64-linux-gnu/bits/wordsize.h
+......... /usr/include/x86_64-linux-gnu/bits/local_lim.h
+.......... /usr/include/linux/limits.h
+.......... /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h
+........ /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
+........ /usr/include/x86_64-linux-gnu/bits/xopen_lim.h
+......... /usr/include/x86_64-linux-gnu/bits/uio_lim.h
+.. /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/string_mem.hpp
+... /usr/include/c++/14/cstddef
+.... /usr/lib/gcc/x86_64-linux-gnu/14/include/stddef.h
+.... /usr/include/c++/14/bits/version.h
+.. /usr/include/c++/14/cstdint
+... /usr/lib/gcc/x86_64-linux-gnu/14/include/stdint-gcc.h
+. /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib
+.. /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp
+... /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cctype
+... /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cerrno
+... /usr/include/c++/14/climits
+.... /usr/lib/gcc/x86_64-linux-gnu/14/include/limits.h
+Multiple include guards may be useful for:
+/tmp/opencode/sysroot/usr/include/x86_64-linux-gnu/gnu/stubs-32.h
+/usr/include/c++/14/bits/version.h
+/usr/include/features-time64.h
+/usr/include/limits.h
+/usr/include/x86_64-linux-gnu/bits/libc-header-start.h
+/usr/include/x86_64-linux-gnu/bits/local_lim.h
+/usr/include/x86_64-linux-gnu/bits/long-double.h
+/usr/include/x86_64-linux-gnu/bits/timesize.h
+/usr/include/x86_64-linux-gnu/gnu/stubs.h
+/usr/lib/gcc/x86_64-linux-gnu/14/include/stddef.h
+/usr/lib/gcc/x86_64-linux-gnu/14/include/syslimits.h

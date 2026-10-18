@@ -1,0 +1,32 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:11:54: error: non-constant condition for static assertion
+   11 | static_assert(std::strtol("2147483648", nullptr, 10) == LONG_MAX);
+      |                                                      ^
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:12,
+                 from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:6:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:11:26:   in ‘constexpr’ expansion of ‘std::strtol(((const char*)"2147483648"), 0, 10)’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:54:25:   in ‘constexpr’ expansion of ‘ilibc::strtol(nptr, endptr, base, (& ilibc::detail::g_errno))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:92:36: error: modification of ‘ilibc::detail::g_errno’ from outside current evaluation is not a constant expression
+   92 |         if (err != nullptr) { *err = ILIBC_ERANGE; }
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:12:55: error: non-constant condition for static assertion
+   12 | static_assert(std::strtoul("4294967296", nullptr, 10) == 4294967295UL);
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:12:27:   in ‘constexpr’ expansion of ‘std::strtoul(((const char*)"4294967296"), 0, 10)’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:60:26:   in ‘constexpr’ expansion of ‘ilibc::strtoul(nptr, endptr, base, (& ilibc::detail::g_errno))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:108:36: error: modification of ‘ilibc::detail::g_errno’ from outside current evaluation is not a constant expression
+  108 |         if (err != nullptr) { *err = ILIBC_ERANGE; }
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:13:39: error: non-constant condition for static assertion
+   13 | static_assert(std::atoi("2147483648") == INT_MAX);
+      |                                       ^
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:13:24:   in ‘constexpr’ expansion of ‘std::atoi(((const char*)"2147483648"))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:41:23:   in ‘constexpr’ expansion of ‘ilibc::atoi(nptr, (& ilibc::detail::g_errno))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:122:42:   in ‘constexpr’ expansion of ‘ilibc::strtol(nptr, 0, 10, err)’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:92:36: error: modification of ‘ilibc::detail::g_errno’ from outside current evaluation is not a constant expression
+   92 |         if (err != nullptr) { *err = ILIBC_ERANGE; }
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:14:40: error: non-constant condition for static assertion
+   14 | static_assert(std::atol("-2147483649") == LONG_MIN);
+      |                                        ^
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_strtol_range.cpp:14:24:   in ‘constexpr’ expansion of ‘std::atol(((const char*)"-2147483649"))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:47:23:   in ‘constexpr’ expansion of ‘ilibc::atol(nptr, (& ilibc::detail::g_errno))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:116:25:   in ‘constexpr’ expansion of ‘ilibc::strtol(nptr, 0, 10, err)’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:92:36: error: modification of ‘ilibc::detail::g_errno’ from outside current evaluation is not a constant expression
+   92 |         if (err != nullptr) { *err = ILIBC_ERANGE; }

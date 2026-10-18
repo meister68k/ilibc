@@ -1,0 +1,7 @@
+// <cmath>  (stub)
+#pragma once
+#if defined(ILIBC_STUB_PASSTHROUGH)
+#  include_next <cmath>
+#else
+#  error "ilibc: <cmath> is not provided (no floating point). See ILIBC-OVR-001 section 4.3."
+#endif

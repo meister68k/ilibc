@@ -1,0 +1,3 @@
+/usr/bin/ld: /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/build/assert_sample.o: in function `main':
+assert_sample.cpp:(.text+0x36): undefined reference to `__ilibc_assert_fail'
+collect2: error: ld returned 1 exit status

@@ -1,0 +1,4 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_stub_csetjmp.cpp:8:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/csetjmp:6:4: error: #error "ilibc: <csetjmp> is not provided (architecture dependent; not provided). See ILIBC-OVR-001 section 4.3."
+    6 | #  error "ilibc: <csetjmp> is not provided (architecture dependent; not provided). See ILIBC-OVR-001 section 4.3."
+      |    ^~~~~

@@ -1,0 +1,7 @@
+// <csetjmp>  (stub)
+#pragma once
+#if defined(ILIBC_STUB_PASSTHROUGH)
+#  include_next <csetjmp>
+#else
+#  error "ilibc: <csetjmp> is not provided (architecture dependent; not provided). See ILIBC-OVR-001 section 4.3."
+#endif

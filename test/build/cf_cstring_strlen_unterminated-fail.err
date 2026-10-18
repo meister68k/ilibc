@@ -1,0 +1,11 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_strlen_unterminated.cpp:12:34: error: non-constant condition for static assertion
+   12 | static_assert(t::strlen(kNoTerm) == 3);
+      |               ~~~~~~~~~~~~~~~~~~~^~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_strlen_unterminated.cpp:5:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_strlen_unterminated.cpp:12:24:   in ‘constexpr’ expansion of ‘std::strlen(((const char*)(& kNoTerm)))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstring:218:15: error: array subscript value ‘3’ is outside the bounds of array ‘kNoTerm’ of type ‘const char [3]’
+  218 |     while (s[n] != '\0') { ++n; }
+      |            ~~~^
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_strlen_unterminated.cpp:11:16: note: declared here
+   11 | constexpr char kNoTerm[3] = {'a', 'b', 'c'};
+      |                ^~~~~~~

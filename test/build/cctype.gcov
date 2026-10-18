@@ -1,0 +1,69 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cctype
+        -:    1:// cctype
+        -:    2:// The 13 <cctype> functions of ILIBC-CTP-001 section 5.3, adapted to the
+        -:    3:// namespace macros of ILIBC-HDR-001 section 3.4 (ILIBC-CTP-001 section 6.1).
+        -:    4:// Header-only: constexpr inline functions, no macros, no .cpp, no link symbols.
+        -:    5:#pragma once
+        -:    6:
+        -:    7:#include <ilibc/config.hpp>
+        -:    8:
+        -:    9:namespace ilibc::detail {
+        -:   10:
+        -:   11:// True when lo <= c <= hi. Safe for any int c (compared as unsigned).
+  3665395:   12:constexpr bool in_range(int c, int lo, int hi) noexcept {
+  3665395:   13:    return static_cast<unsigned>(c) - static_cast<unsigned>(lo)
+  3665395:   14:           <= static_cast<unsigned>(hi - lo);
+        -:   15:}
+------------------
+_ZN5ilibc6detail8in_rangeEiii:
+    23239:   12:constexpr bool in_range(int c, int lo, int hi) noexcept {
+    23239:   13:    return static_cast<unsigned>(c) - static_cast<unsigned>(lo)
+    23239:   14:           <= static_cast<unsigned>(hi - lo);
+        -:   15:}
+------------------
+_ZN5ilibc6detail8in_rangeEiii:
+  3642156:   12:constexpr bool in_range(int c, int lo, int hi) noexcept {
+  3642156:   13:    return static_cast<unsigned>(c) - static_cast<unsigned>(lo)
+  3642156:   14:           <= static_cast<unsigned>(hi - lo);
+        -:   15:}
+------------------
+        -:   16:
+        -:   17:}  // namespace ilibc::detail
+        -:   18:
+        -:   19:ILIBC_NS_BEGIN
+        -:   20:
+     5242:   21:[[nodiscard]] constexpr bool isupper(int c) noexcept { return ilibc::detail::in_range(c, 'A', 'Z'); }
+     5164:   22:[[nodiscard]] constexpr bool islower(int c) noexcept { return ilibc::detail::in_range(c, 'a', 'z'); }
+     3851:   23:[[nodiscard]] constexpr bool isdigit(int c) noexcept { return ilibc::detail::in_range(c, '0', '9'); }
+        -:   24:
+     2668:   25:[[nodiscard]] constexpr bool isalpha(int c) noexcept { return isupper(c) || islower(c); }
+     1381:   26:[[nodiscard]] constexpr bool isalnum(int c) noexcept { return isalpha(c) || isdigit(c); }
+        -:   27:
+     1287:   28:[[nodiscard]] constexpr bool isxdigit(int c) noexcept {
+     1287:   29:    return isdigit(c) || ilibc::detail::in_range(c, 'A', 'F') || ilibc::detail::in_range(c, 'a', 'f');
+        -:   30:}
+  3643470:   31:[[nodiscard]] constexpr bool isspace(int c) noexcept {
+  3643470:   32:    return c == ' ' || ilibc::detail::in_range(c, 0x09, 0x0D);
+        -:   33:}
+------------------
+_ZSt7isspacei:
+     1287:   31:[[nodiscard]] constexpr bool isspace(int c) noexcept {
+     1287:   32:    return c == ' ' || ilibc::detail::in_range(c, 0x09, 0x0D);
+        -:   33:}
+------------------
+_ZSt7isspacei:
+  3642183:   31:[[nodiscard]] constexpr bool isspace(int c) noexcept {
+  3642183:   32:    return c == ' ' || ilibc::detail::in_range(c, 0x09, 0x0D);
+        -:   33:}
+------------------
+     1287:   34:[[nodiscard]] constexpr bool iscntrl(int c) noexcept {
+     1287:   35:    return ilibc::detail::in_range(c, 0x00, 0x1F) || c == 0x7F;
+        -:   36:}
+     1287:   37:[[nodiscard]] constexpr bool isprint(int c) noexcept { return ilibc::detail::in_range(c, 0x20, 0x7E); }
+     2574:   38:[[nodiscard]] constexpr bool isgraph(int c) noexcept { return ilibc::detail::in_range(c, 0x21, 0x7E); }
+     1287:   39:[[nodiscard]] constexpr bool ispunct(int c) noexcept { return isgraph(c) && !isalnum(c); }
+        -:   40:
+     1287:   41:[[nodiscard]] constexpr int tolower(int c) noexcept { return isupper(c) ? c + ('a' - 'A') : c; }
+     1287:   42:[[nodiscard]] constexpr int toupper(int c) noexcept { return islower(c) ? c - ('a' - 'A') : c; }
+        -:   43:
+        -:   44:ILIBC_NS_END

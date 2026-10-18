@@ -1,0 +1,63 @@
+// cstdlib
+// The six <cstdlib> functions of ILIBC-STL-001 section 2.1, adapted to the
+// namespace macros of ILIBC-HDR-001 section 3.4 (ILIBC-STL-001 section 5.3).
+// Header-only: constexpr inline functions, no .cpp, no link symbols. Pulls
+// in <cctype> through ilibc/stdlib.hpp, so the other classification
+// functions are visible in std (D-H4). The public macros EXIT_SUCCESS,
+// EXIT_FAILURE and MB_CUR_MAX are suppressed under ILIBC_HOST_TEST because
+// the host libc already defines them (ILIBC-HDR-001 sections 3.3, 6.1).
+#pragma once
+
+#include <ilibc/config.hpp>
+#include <ilibc/stdlib.hpp>
+#include <cstddef>
+
+#if !defined(ILIBC_HOST_TEST)
+// Defined for declaration compatibility only; exit() itself is not
+// provided (ILIBC-STL-001 section 2.4, overview D-17).
+#  define EXIT_SUCCESS 0
+#  define EXIT_FAILURE 1
+#  define MB_CUR_MAX (static_cast<std::size_t>(1))  // the "C" locale has one byte
+#endif
+
+ILIBC_NS_BEGIN
+
+// ---------------------------------------------------------------- SL-01..SL-06
+
+// Absolute value of j; undefined for INT_MIN (constant expressions
+// diagnose it, section 4.1). ND per section 2.1.
+[[nodiscard]] constexpr int abs(int j) noexcept { return j < 0 ? -j : j; }
+
+// Absolute value of j; undefined for LONG_MIN (section 4.1). ND.
+[[nodiscard]] constexpr long abs(long j) noexcept { return j < 0 ? -j : j; }
+
+// Absolute value of j; undefined for LONG_MIN (section 4.1). ND.
+[[nodiscard]] constexpr long labs(long j) noexcept { return j < 0 ? -j : j; }
+
+// Convert nptr (base 10) to int, writing ERANGE to errno on overflow
+// (sections 4.2, 4.3). Range-in-bound inputs evaluate as constant
+// expressions; an out-of-range path writes errno and is diagnosed (3.4).
+[[nodiscard]] constexpr int atoi(ILIBC_NONNULL const char *nptr) noexcept {
+    return ilibc::atoi(nptr, &ILIBC_ERRNO);
+}
+
+// Convert nptr (base 10) to long, writing ERANGE to errno on overflow
+// (sections 4.2, 4.3).
+[[nodiscard]] constexpr long atol(ILIBC_NONNULL const char *nptr) noexcept {
+    return ilibc::atol(nptr, &ILIBC_ERRNO);
+}
+
+// Convert nptr in base (0 or 2..36) to long; writes ERANGE to errno on
+// overflow (section 4.2). No [[nodiscard]]: the endptr/errno side effects
+// are the point (section 2.1).
+constexpr long strtol(ILIBC_NONNULL const char *nptr, char **endptr, int base) noexcept {
+    return ilibc::strtol(nptr, endptr, base, &ILIBC_ERRNO);
+}
+
+// Convert nptr in base (0 or 2..36) to unsigned long; writes ERANGE to
+// errno on overflow (section 4.2).
+constexpr unsigned long strtoul(ILIBC_NONNULL const char *nptr, char **endptr, int base) noexcept {
+    return ilibc::strtoul(nptr, endptr, base, &ILIBC_ERRNO);
+}
+
+ILIBC_NS_END

@@ -1,0 +1,13 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_no_global_atoi.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_no_global_atoi.cpp:9:23: error: ‘::atoi’ has not been declared
+    9 | int main() { return ::atoi("1"); }
+      |                       ^~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_no_global_atoi.cpp:9:23: note: suggested alternatives:
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_no_global_atoi.cpp:5:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:40:29: note:   ‘std::atoi’
+   40 | [[nodiscard]] constexpr int atoi(ILIBC_NONNULL const char *nptr) noexcept {
+      |                             ^~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:12:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:121:15: note:   ‘ilibc::atoi’
+  121 | constexpr int atoi(ILIBC_NONNULL const char *nptr, int *err) noexcept {
+      |               ^~~~

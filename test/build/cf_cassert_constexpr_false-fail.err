@@ -1,0 +1,15 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cassert_constexpr_false.cpp:16:30: error: non-constant condition for static assertion
+   16 | static_assert(cf_checked(-1) == -1);
+      |               ~~~~~~~~~~~~~~~^~~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cassert_constexpr_false.cpp:7:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cassert_constexpr_false.cpp:16:25:   in ‘constexpr’ expansion of ‘cf_checked(-1)’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cassert:16:62: error: call to non-‘constexpr’ function ‘void __ilibc_assert_fail(const char*, const char*, int)’
+   16 |                                       : ::__ilibc_assert_fail(#__VA_ARGS__, __FILE__, __LINE__))
+      |                                         ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cassert_constexpr_false.cpp:12:5: note: in expansion of macro ‘assert’
+   12 |     assert(n >= 0);
+      |     ^~~~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cassert:8:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/assert_fail.hpp:7:30: note: ‘void __ilibc_assert_fail(const char*, const char*, int)’ declared here
+    7 | extern "C" [[noreturn]] void __ilibc_assert_fail(const char *expr, const char *file, int line) noexcept;
+      |                              ^~~~~~~~~~~~~~~~~~~

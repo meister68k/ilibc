@@ -1,0 +1,12 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_gets_tiny_array.cpp:7:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio: In instantiation of ‘char* ilibc::gets(char (&)[N], int, int*) [with unsigned int N = 1]’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:175:16:   required from ‘char* ilibc::gets(char (&)[N], int) [with unsigned int N = 1]’
+  175 |     return gets(buffer, fd, &detail::g_errno);
+      |            ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_gets_tiny_array.cpp:13:23:   required from here
+   13 |     return ilibc::gets(buf) == nullptr;
+      |            ~~~~~~~~~~~^~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:167:21: error: static assertion failed: ilibc: gets needs an array of 2..INT_MAX elements
+  167 |     static_assert(N >= 2 && N <= static_cast<std::size_t>(INT_MAX),
+      |                   ~~^~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:167:21: note: the comparison reduces to ‘(1 >= 2)’

@@ -1,0 +1,9 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_no_global.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_no_global.cpp:9:23: error: ‘::strlen’ has not been declared; did you mean ‘std::strlen’?
+    9 | int main() { return ::strlen("abc") != 3 ? 0 : 1; }
+      |                       ^~~~~~
+      |                       std::strlen
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstring_no_global.cpp:5:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstring:215:51: note: ‘std::strlen’ declared here
+  215 | [[nodiscard]] ILIBC_NONNULL constexpr std::size_t strlen(const char *s) noexcept {
+      |                                                   ^~~~~~

@@ -1,0 +1,7 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_no_div_t.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_no_div_t.cpp:9:19: error: ‘div_t’ is not a member of ‘std’
+    9 | int main() { std::div_t d; (void)d; return 0; }
+      |                   ^~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_no_div_t.cpp:9:34: error: ‘d’ was not declared in this scope
+    9 | int main() { std::div_t d; (void)d; return 0; }
+      |                                  ^

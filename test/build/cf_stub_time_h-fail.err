@@ -1,0 +1,4 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_stub_time_h.cpp:8:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/time.h:6:4: error: #error "ilibc: <time.h> is not provided (no clock). See ILIBC-OVR-001 section 4.3."
+    6 | #  error "ilibc: <time.h> is not provided (no clock). See ILIBC-OVR-001 section 4.3."
+      |    ^~~~~

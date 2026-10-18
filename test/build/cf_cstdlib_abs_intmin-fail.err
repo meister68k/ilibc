@@ -1,0 +1,15 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_intmin.cpp:10:33: error: non-constant condition for static assertion
+   10 | static_assert(std::abs(INT_MIN) == 0);
+      |               ~~~~~~~~~~~~~~~~~~^~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_intmin.cpp:5:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_intmin.cpp:10:23:   in ‘constexpr’ expansion of ‘std::abs((-2147483647 - 1))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:29:66: error: overflow in constant expression [-fpermissive]
+   29 | [[nodiscard]] constexpr int abs(int j) noexcept { return j < 0 ? -j : j; }
+      |                                                                  ^~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_intmin.cpp:11:35: error: non-constant condition for static assertion
+   11 | static_assert(std::labs(LONG_MIN) == 0L);
+      |               ~~~~~~~~~~~~~~~~~~~~^~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdlib_abs_intmin.cpp:11:24:   in ‘constexpr’ expansion of ‘std::labs((-2147483647 - 1))’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:35:69: error: overflow in constant expression [-fpermissive]
+   35 | [[nodiscard]] constexpr long labs(long j) noexcept { return j < 0 ? -j : j; }
+      |                                                                     ^~

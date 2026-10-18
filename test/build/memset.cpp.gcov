@@ -1,0 +1,17 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memset.cpp
+        -:    1:// memset.cpp — ST-05: ILIBC_NS::memset の実体(ILIBC-STR-001 §5.1)。
+        -:    2:// ヘッダの宣言の asm ラベルにより、リンク名は C の "memset" になる(§7.2)。
+        -:    3:// このファイルは GCC で -fno-tree-loop-distribute-patterns を指定してビルドする
+        -:    4:// (§3)。指定しないとループが同名関数への呼び出しに置換され、無限再帰になる。
+        -:    5:#include <cstring>
+        -:    6:
+        -:    7:ILIBC_NS_BEGIN
+        -:    8:
+       12:    9:void *memset(void *s, int c, std::size_t n) noexcept {
+        -:   10:    ILIBC_ASSERT(s != nullptr);
+       12:   11:    ilibc::detail::mem_fill(static_cast<unsigned char *>(s),
+        -:   12:                             static_cast<unsigned char>(c), n);
+       12:   13:    return s;
+        -:   14:}
+        -:   15:
+        -:   16:ILIBC_NS_END

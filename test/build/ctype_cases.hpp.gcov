@@ -1,0 +1,271 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/ctype_cases.hpp
+        -:    1:// ctype_cases.hpp — <cctype>の単一ソース試験本体(Direct/Opaque 共通)。
+        -:    2:// spec/ilibc_test_spec.md §5.2(T1〜T6)と spec/ilibc_cctype_spec.md §8(TC-CT-01〜05)に従う。
+        -:    3:// コンパイル時(test/constexpr)と実行時(test/target)は、この本体を引数の渡し方だけ変えて共有する。
+        -:    4:#pragma once
+        -:    5:
+        -:    6:#include <climits>
+        -:    7:#include <cctype>
+        -:    8:#include <ilibc/config.hpp>
+        -:    9:#include "oracle/ctype_ref.hpp"
+        -:   10:
+        -:   11:// 試験対象の名前空間(std、またはホスト差分の ilibc_under_test)(T1)
+        -:   12:namespace t = ILIBC_NS;
+        -:   13:// 独立参照の省略名(仕様の記述に合わせる)
+        -:   14:namespace ref = ilibc_test::ref;
+        -:   15:
+        -:   16:// ------------------------------------------------- 引数の渡し方(T2/T3)
+        -:   17:
+        -:   18:// 値をそのまま返す(コンパイル時の試験用)
+        -:   19:struct Direct {
+        -:   20:    constexpr int operator()(int x) const { return x; }
+        -:   21:};
+        -:   22:
+        -:   23:// volatile 経由で値を隠し、最適化によるコンパイル時の畳み込みを防ぐ(実行時の試験用)
+        -:   24:struct Opaque {
+     4371:   25:    int operator()(int x) const { volatile int v = x; return v; }
+        -:   26:};
+        -:   27:
+        -:   28:// 関数番号の個数(0=isalnum … 12=toupper、ILIBC-CTP-001 §5.1/§5.2の順)
+        -:   29:inline constexpr int kFuncCount = 13;
+        -:   30:
+        -:   31:// ------------------------------------------------- 共通の補助
+        -:   32:
+        -:   33:// 0〜127のうち pred が真になる値の個数を数える(TC-CT-03)
+        -:   34:template <class Id, class Pred>
+        -:   35:constexpr int count_true(Id id, Pred pred) {
+        -:   36:    int n = 0;
+        -:   37:    for (int c = 0; c <= 127; ++c) {
+        -:   38:        if (pred(id(c))) ++n;
+        -:   39:    }
+        -:   40:    return n;
+        -:   41:}
+        -:   42:
+        -:   43:// 11の分類関数がすべて偽か(TC-CT-02)
+     1030:   44:constexpr bool classify_all_false(int x) {
+     2060:   45:    return !t::isalnum(x) && !t::isalpha(x) && !t::iscntrl(x) && !t::isdigit(x)
+     1030:   46:        && !t::isgraph(x) && !t::islower(x) && !t::isprint(x) && !t::ispunct(x)
+    2060*:   47:        && !t::isspace(x) && !t::isupper(x) && !t::isxdigit(x);
+        -:   48:}
+        -:   49:
+        -:   50:// 変換2関数が入力値をそのまま返すか(TC-CT-02、TC-CT-05)
+     1030:   51:constexpr bool convert_identity(int x) {
+    1030*:   52:    return t::tolower(x) == x && t::toupper(x) == x;
+        -:   53:}
+        -:   54:
+        -:   55:// 値 x で関係式R1〜R9(ILIBC-CTP-001 §3.3)が成立するか(TC-CT-04)
+        -:   56:constexpr bool relations_hold(int x) {
+        -:   57:    const bool upper = t::isupper(x);
+        -:   58:    const bool lower = t::islower(x);
+        -:   59:    const bool alpha = t::isalpha(x);
+        -:   60:    const bool digit = t::isdigit(x);
+        -:   61:    const bool alnum = t::isalnum(x);
+        -:   62:    const bool xdigit = t::isxdigit(x);
+        -:   63:    const bool space = t::isspace(x);
+        -:   64:    const bool cntrl = t::iscntrl(x);
+        -:   65:    const bool punct = t::ispunct(x);
+        -:   66:    const bool graph = t::isgraph(x);
+        -:   67:    const bool print = t::isprint(x);
+        -:   68:
+        -:   69:    if (alpha != (upper || lower)) return false;               // R1
+        -:   70:    if (alnum != (alpha || digit)) return false;               // R2
+        -:   71:    if (graph != (alnum || punct)) return false;               // R3
+        -:   72:    if (print != (graph || x == ' ')) return false;            // R4
+        -:   73:    if (upper && lower) return false;                          // R5(互いに排他)
+        -:   74:    if (upper && digit) return false;
+        -:   75:    if (upper && punct) return false;
+        -:   76:    if (lower && digit) return false;
+        -:   77:    if (lower && punct) return false;
+        -:   78:    if (digit && punct) return false;
+        -:   79:    if (xdigit && !(digit || alpha)) return false;             // R6
+        -:   80:    if (cntrl && print) return false;                          // R7
+        -:   81:    if (space && x != ' ' && !cntrl) return false;             // R8
+        -:   82:    // R9: 領域外(c<0 または c>127)なら分類11関数がすべて偽
+        -:   83:    // (仕様の「13の分類関数」は分類関数11個の意。変換2関数の対応は V3 で検査する)
+        -:   84:    if ((x < 0 || x > 127)
+        -:   85:        && (alnum || alpha || cntrl || digit || graph || lower || print
+        -:   86:            || punct || space || upper || xdigit)) {
+        -:   87:        return false;
+        -:   88:    }
+        -:   89:    return true;
+        -:   90:}
+        -:   91:
+        -:   92:// 値 x で変換の性質V1〜V4(ILIBC-CTP-001 §5.2)が成立するか(TC-CT-05)
+        -:   93:constexpr bool conversion_props_hold(int x) {
+        -:   94:    const int lo = t::tolower(x);
+        -:   95:    const int up = t::toupper(x);
+        -:   96:    if (t::isupper(x) && !(lo == x + 32 && t::islower(lo))) return false;  // V1
+        -:   97:    if (t::islower(x) && !(up == x - 32 && t::isupper(up))) return false;  // V2
+        -:   98:    if (!t::isupper(x) && !t::islower(x) && (lo != x || up != x)) return false;  // V3
+        -:   99:    if (t::isalpha(x) && !(t::tolower(up) == lo && t::toupper(lo) == up)) return false;  // V4
+        -:  100:    return true;
+        -:  101:}
+        -:  102:
+        -:  103:// 関数番号 which(0〜12)の関数を引数 x に適用した結果と、
+        -:  104:// 独立参照が生値 raw に対して返す結果が一致するか(TC-CT-01)
+     3341:  105:constexpr bool ct01_pair(int which, int x, int raw) {
+     3341:  106:    switch (which) {
+      257:  107:    case 0:  return t::isalnum(x) == ref::is_alnum(raw);
+      257:  108:    case 1:  return t::isalpha(x) == ref::is_alpha(raw);
+      257:  109:    case 2:  return t::iscntrl(x) == ref::is_cntrl(raw);
+      257:  110:    case 3:  return t::isdigit(x) == ref::is_digit(raw);
+      257:  111:    case 4:  return t::isgraph(x) == ref::is_graph(raw);
+      257:  112:    case 5:  return t::islower(x) == ref::is_lower(raw);
+      257:  113:    case 6:  return t::isprint(x) == ref::is_print(raw);
+      257:  114:    case 7:  return t::ispunct(x) == ref::is_punct(raw);
+      257:  115:    case 8:  return t::isspace(x) == ref::is_space(raw);
+      257:  116:    case 9:  return t::isupper(x) == ref::is_upper(raw);
+      257:  117:    case 10: return t::isxdigit(x) == ref::is_xdigit(raw);
+      257:  118:    case 11: return t::tolower(x) == ref::to_lower(raw);
+      257:  119:    case 12: return t::toupper(x) == ref::to_upper(raw);
+    #####:  120:    default: return false;  // 関数番号が範囲外(呼び出し側の誤り)
+        -:  121:    }
+        -:  122:}
+        -:  123:
+        -:  124:// TC-CT-02 の極端値集合(ILIBC-CTP-001 §8)
+        -:  125:inline constexpr int kExtremes[] = {INT_MIN, INT_MIN + 1, -256, -2, 256, INT_MAX};
+        -:  126:
+        -:  127:// 0〜255の各cについて、下位ビットだけを見る実装の誤りを検出するビット別名化値(4種)を渡す
+        -:  128:// (c | 0x80000000 は unsigned 経由で int に変換する。ILIBC-CTP-001 §8 TC-CT-02)
+        -:  129:template <class F>
+        1:  130:constexpr void for_each_alias(F f) {
+      257:  131:    for (int c = 0; c < 256; ++c) {
+      256:  132:        f(c + 256);
+      256:  133:        f(c + 0x10000);
+      256:  134:        f(c + 0x01000000);
+      256:  135:        f(static_cast<int>(static_cast<unsigned>(c) | 0x80000000u));
+        -:  136:    }
+        1:  137:}
+        -:  138:
+        -:  139:// ------------------------------------------------- TC-CT-01: 全257値の照合
+        -:  140:
+        -:  141:// which関数の最初の不一致値(c=0〜255)を返す(-1なら一致)。
+        -:  142:// c=-1 は成功標識(-1)と失敗値が衝突するため、tc_ct01_neg1_okで個別に検査する。
+        -:  143:template <class Id>
+       13:  144:constexpr int tc_ct01_first_failure(Id id, int which) {
+     3341:  145:    for (int c = 0; c < 256; ++c) {
+    3328*:  146:        if (!ct01_pair(which, id(c), c)) return c;
+        -:  147:    }
+       13:  148:    return -1;
+        -:  149:}
+        -:  150:
+        -:  151:// which関数を c=-1(EOF)で独立参照と照合する(TC-CT-01 の -1 の分。
+        -:  152:// 失敗しても成功標識と区別できないため、戻り値を bool にして衝突を避ける)
+        -:  153:template <class Id>
+       13:  154:constexpr bool tc_ct01_neg1_ok(Id id, int which) {
+       13:  155:    return ct01_pair(which, id(-1), -1);
+        -:  156:}
+        -:  157:
+        -:  158:// ------------------------------------------------- TC-CT-02: 極端値・別名化
+        -:  159:
+        -:  160:// 極端値・ビット別名化値で、分類がすべて偽・変換が恒等か(最初の失敗値、-1なら合格)
+        -:  161:// 入力集合に -1 は含まれないため、成功標識(-1)と衝突しない
+        -:  162:template <class Id>
+        1:  163:constexpr int tc_ct02_first_failure(Id id) {
+        7:  164:    for (int e : kExtremes) {
+        6:  165:        const int x = id(e);
+       6*:  166:        if (!classify_all_false(x) || !convert_identity(x)) return x;
+        -:  167:    }
+        1:  168:    int result = -1;
+        1:  169:    for_each_alias([&](int v) {
+    1024*:  170:        if (result != -1) return;  // 既に失敗あり
+     1024:  171:        const int x = id(v);
+    1024*:  172:        if (!classify_all_false(x) || !convert_identity(x)) result = x;
+        -:  173:    });
+        1:  174:    return result;
+        -:  175:}
+        -:  176:
+        -:  177:// ------------------------------------------------- TC-CT-03: 個数の照合
+        -:  178:
+        -:  179:// 0〜127の個数が仕様の個数表と一致するか。
+        -:  180:// 戻り値: -1(全一致)、0〜12=個数が一致しなかった関数番号(isalnum…toupper の順)
+        -:  181:template <class Id>
+        -:  182:constexpr int tc_ct03_first_failure(Id id) {
+        -:  183:    if (count_true(id, [](int x) { return t::isalnum(x); }) != ref::kCountAlnum) return 0;
+        -:  184:    if (count_true(id, [](int x) { return t::isalpha(x); }) != ref::kCountAlpha) return 1;
+        -:  185:    if (count_true(id, [](int x) { return t::iscntrl(x); }) != ref::kCountCntrl) return 2;
+        -:  186:    if (count_true(id, [](int x) { return t::isdigit(x); }) != ref::kCountDigit) return 3;
+        -:  187:    if (count_true(id, [](int x) { return t::isgraph(x); }) != ref::kCountGraph) return 4;
+        -:  188:    if (count_true(id, [](int x) { return t::islower(x); }) != ref::kCountLower) return 5;
+        -:  189:    if (count_true(id, [](int x) { return t::isprint(x); }) != ref::kCountPrint) return 6;
+        -:  190:    if (count_true(id, [](int x) { return t::ispunct(x); }) != ref::kCountPunct) return 7;
+        -:  191:    if (count_true(id, [](int x) { return t::isspace(x); }) != ref::kCountSpace) return 8;
+        -:  192:    if (count_true(id, [](int x) { return t::isupper(x); }) != ref::kCountUpper) return 9;
+        -:  193:    if (count_true(id, [](int x) { return t::isxdigit(x); }) != ref::kCountXdigit) return 10;
+        -:  194:    if (count_true(id, [](int x) { return t::tolower(x) != x; }) != ref::kCountToLower) return 11;
+        -:  195:    if (count_true(id, [](int x) { return t::toupper(x) != x; }) != ref::kCountToUpper) return 12;
+        -:  196:    return -1;
+        -:  197:}
+        -:  198:
+        -:  199:// ------------------------------------------------- TC-CT-04: 関係式 R1-R9
+        -:  200:
+        -:  201:// c=0〜255・極端値・ビット別名化値で関係式が成立するか(最初の失敗値、-1なら成立)
+        -:  202:// c=-1 は tc_ct04_neg1_ok で個別に検査するため、本体は 0 から数える
+        -:  203:// (失敗値 -1 と成功標識 -1 の衝突を避ける)
+        -:  204:template <class Id>
+        -:  205:constexpr int tc_ct04_first_failure(Id id) {
+        -:  206:    for (int c = 0; c < 256; ++c) {
+        -:  207:        if (!relations_hold(id(c))) return c;
+        -:  208:    }
+        -:  209:    // 仕様: R1〜R9は「−1〜255、および TC-CT-02の値」で検証する
+        -:  210:    for (int e : kExtremes) {
+        -:  211:        const int x = id(e);
+        -:  212:        if (!relations_hold(x)) return x;
+        -:  213:    }
+        -:  214:    int result = -1;
+        -:  215:    for_each_alias([&](int v) {
+        -:  216:        if (result != -1) return;
+        -:  217:        const int x = id(v);
+        -:  218:        if (!relations_hold(x)) result = x;
+        -:  219:    });
+        -:  220:    return result;
+        -:  221:}
+        -:  222:
+        -:  223:// 関係式を c=-1(EOF)で検査する(TC-CT-04 の -1 の分。bool で返して標識衝突を避ける)
+        -:  224:template <class Id>
+        -:  225:constexpr bool tc_ct04_neg1_ok(Id id) {
+        -:  226:    return relations_hold(id(-1));
+        -:  227:}
+        -:  228:
+        -:  229:// ------------------------------------------------- TC-CT-05: 性質 V1-V5
+        -:  230:
+        -:  231:// TC-CT-05 の戻り値: V5(個数)の失敗を示す(入力値集合に存在しない値)
+        -:  232:inline constexpr int kCountFailure = 0x40000000;
+        -:  233:
+        -:  234:// 変換の性質V1〜V5と領域外入力の恒等性(最初の失敗値、-1なら合格。
+        -:  235:// kCountFailure なら V5 の個数不一致。c=-1 は tc_ct05_neg1_ok で個別に検査する)
+        -:  236:template <class Id>
+        -:  237:constexpr int tc_ct05_first_failure(Id id) {
+        -:  238:    // V1〜V4: c=0〜255
+        -:  239:    for (int c = 0; c < 256; ++c) {
+        -:  240:        if (!conversion_props_hold(id(c))) return c;
+        -:  241:    }
+        -:  242:    // V5: 変換される文字が各26個か(変換対象は 0〜127 に収まるので 0〜255で数える)
+        -:  243:    int n_lower = 0;
+        -:  244:    int n_upper = 0;
+        -:  245:    for (int c = 0; c < 256; ++c) {
+        -:  246:        const int x = id(c);
+        -:  247:        if (t::tolower(x) != x) ++n_lower;
+        -:  248:        if (t::toupper(x) != x) ++n_upper;
+        -:  249:    }
+        -:  250:    if (n_lower != ref::kCountToLower || n_upper != ref::kCountToUpper) return kCountFailure;
+        -:  251:    // 領域外入力(極端値・ビット別名化値)がそのまま返ること
+        -:  252:    for (int e : kExtremes) {
+        -:  253:        const int x = id(e);
+        -:  254:        if (!convert_identity(x)) return x;
+        -:  255:    }
+        -:  256:    int result = -1;
+        -:  257:    for_each_alias([&](int v) {
+        -:  258:        if (result != -1) return;
+        -:  259:        const int x = id(v);
+        -:  260:        if (!convert_identity(x)) result = x;
+        -:  261:    });
+        -:  262:    return result;
+        -:  263:}
+        -:  264:
+        -:  265:// 変換の性質と恒等性を c=-1(EOF)で検査する(TC-CT-05 の -1 の分。V3が恒等性を含む)
+        -:  266:template <class Id>
+        -:  267:constexpr bool tc_ct05_neg1_ok(Id id) {
+        -:  268:    const int x = id(-1);
+        -:  269:    return conversion_props_hold(x) && convert_identity(x);
+        -:  270:}

@@ -1,0 +1,26 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memcpy.cpp
+        -:    1:// memcpy.cpp — ST-01: ILIBC_NS::memcpy の実体(ILIBC-STR-001 §5.1)。
+        -:    2:// ヘッダの宣言の asm ラベルにより、リンク名は C の "memcpy" になる(§7.2)。
+        -:    3:// このファイルは GCC で -fno-tree-loop-distribute-patterns を指定してビルドする
+        -:    4:// (§3)。指定しないとループが同名関数への呼び出しに置換され、無限再帰になる。
+        -:    5:#include <cstring>
+        -:    6:
+        -:    7:ILIBC_NS_BEGIN
+        -:    8:
+       67:    9:void *memcpy(void *s1, const void *s2, std::size_t n) noexcept {
+        -:   10:    ILIBC_ASSERT(s1 != nullptr);
+        -:   11:    ILIBC_ASSERT(s2 != nullptr);
+        -:   12:#if defined(ILIBC_DEBUG)
+        -:   13:    // 領域の重なり検査(§4.7): n>0 のとき、両領域の間隔が n 以上であること。
+        -:   14:    // アドレス差を uintptr_t で引き算して比較する(オーバーフローしない)
+        -:   15:    const std::uintptr_t a = reinterpret_cast<std::uintptr_t>(s1);
+        -:   16:    const std::uintptr_t b = reinterpret_cast<std::uintptr_t>(s2);
+        -:   17:    const std::uintptr_t gap = (a <= b) ? (b - a) : (a - b);
+        -:   18:    ILIBC_ASSERT(n == 0 || gap >= static_cast<std::uintptr_t>(n));
+        -:   19:#endif
+       67:   20:    ilibc::detail::mem_copy_fwd(static_cast<unsigned char *>(s1),
+        -:   21:                                 static_cast<const unsigned char *>(s2), n);
+       67:   22:    return s1;
+        -:   23:}
+        -:   24:
+        -:   25:ILIBC_NS_END

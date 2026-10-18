@@ -1,0 +1,10 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cctype:7,
+                 from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/build/h_cctype.cpp:1:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/config.hpp:18:48: error: static assertion failed: ilibc: ILP32 is required
+   18 | static_assert(sizeof(int) == 4 && sizeof(long) == 4 && sizeof(void *) == 4,
+      |                                   ~~~~~~~~~~~~~^~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/config.hpp:18:48: note: the comparison reduces to ‘(8 == 4)’
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/config.hpp:20:27: error: static assertion failed: ilibc: int and long must have the same size
+   20 | static_assert(sizeof(int) == sizeof(long), "ilibc: int and long must have the same size");
+      |               ~~~~~~~~~~~~^~~~~~~~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/config.hpp:20:27: note: the comparison reduces to ‘(4 == 8)’

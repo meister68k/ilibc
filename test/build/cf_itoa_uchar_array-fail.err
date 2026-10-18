@@ -1,0 +1,17 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_uchar_array.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_uchar_array.cpp:12:26: error: no matching function for call to ‘_itoa_s(int, unsigned char [8], int)’
+   12 |     return ilibc::_itoa_s(1, buf, 10);
+      |            ~~~~~~~~~~~~~~^~~~~~~~~~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:12,
+                 from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_uchar_array.cpp:6:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:169:29: note: candidate: ‘template<unsigned int N> constexpr int ilibc::_itoa_s(int, char (&)[N], int)’
+  169 | [[nodiscard]] constexpr int _itoa_s(int value, char (&buffer)[N], int radix) noexcept {
+      |                             ^~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:169:29: note:   template argument deduction/substitution failed:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_uchar_array.cpp:12:26: note:   mismatched types ‘char’ and ‘unsigned char’
+   12 |     return ilibc::_itoa_s(1, buf, 10);
+      |            ~~~~~~~~~~~~~~^~~~~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:131:29: note: candidate: ‘constexpr int ilibc::_itoa_s(int, char*, std::size_t, int)’
+  131 | [[nodiscard]] constexpr int _itoa_s(int value, char *buffer, std::size_t size, int radix) noexcept {
+      |                             ^~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:131:29: note:   candidate expects 4 arguments, 3 provided

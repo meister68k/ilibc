@@ -1,0 +1,149 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/cases/cstdlib_runtime.cpp
+        -:    1:// cstdlib_runtime.cpp — <cstdlib>のE1実行時試験(R: TC-SL-14/15、TC-SL-22〜24)。
+        -:    2:// 先頭でブートストラップ(spec/ilibc_test_spec.md §5.8)を行い、err版・
+        -:    3:// _itoa_s・abs を volatile 経由の短い固定データで最小検査してから、
+        -:    4:// TC-SL-06〜11・22〜24を共有本体 sl_cases.hpp で実行する
+        -:    5:// (spec/ilibc_cstdlib_spec.md §9)。
+        -:    6:#include "../../common/harness/th_output.hpp"
+        -:    7:#include "../../common/sl_cases.hpp"
+        -:    8:
+        -:    9:// プラットフォーム層(§5.6.2)。putc は th_output.hpp が宣言する。
+        -:   10:// [[noreturn]] の位置は e1_stdio.cpp の注記のとおり(GCCが受理する順)
+        -:   11:extern "C" [[noreturn]] void ilibc_test_exit(int status);
+        -:   12:
+        -:   13:// 試験対象の名前空間(T1)。E1 では std(=ilibc本体)。
+        -:   14:namespace t = ILIBC_NS;
+        -:   15:
+        -:   16:// ブートストラップ(§5.8): strtol・_itoa_s・abs を、volatile 経由の固定データで
+        -:   17:// 検査する。成功で1、失敗で0を返す(呼び出し側が BOOTSTRAP FAIL・終了コード2で止める)。
+        1:   18:static int bootstrap(void) {
+        -:   19:    // "123" をローカル配列に置き、volatile 経由で渡す
+        -:   20:    char s[4];
+        1:   21:    s[0] = '1';
+        1:   22:    s[1] = '2';
+        1:   23:    s[2] = '3';
+        1:   24:    s[3] = '\0';
+        1:   25:    const volatile char *ps = s;
+        1:   26:    const int base = sl_cases::vol(10);
+        1:   27:    const long v = ilibc::strtol(const_cast<const char *>(ps), nullptr, base, nullptr);
+        1:   28:    if (v != 123L) {
+    #####:   29:        return 0;
+        -:   30:    }
+        -:   31:    char b[12];
+        -:   32:    int i;
+       13:   33:    for (i = 0; i < 12; ++i) {
+       12:   34:        b[i] = '\0';
+        -:   35:    }
+        1:   36:    const volatile int vr = ilibc::_itoa_s(static_cast<int>(v), b, 12, base);
+        1:   37:    if (vr != 0) {
+    #####:   38:        return 0;
+        -:   39:    }
+        1:   40:    if (b[0] != '1' || b[1] != '2' || b[2] != '3' || b[3] != '\0') {
+    #####:   41:        return 0;
+        -:   42:    }
+        1:   43:    const volatile int va = t::abs(sl_cases::vol(-5));
+        1:   44:    if (va != 5) {
+    #####:   45:        return 0;
+        -:   46:    }
+        1:   47:    return 1;
+        -:   48:}
+        -:   49:
+        1:   50:int main(void) {
+        -:   51:    // まずブートストラップ(§5.8)。失敗したら以降の実行時試験は行わない
+        1:   52:    if (!bootstrap()) {
+    #####:   53:        th_puts("BOOTSTRAP FAIL\n");
+    #####:   54:        ilibc_test_exit(2);
+        -:   55:    }
+        -:   56:
+        -:   57:    // TC-SL-06〜11・22〜24: ホスト差分と同じ共有本体(H: TST §5.2 単一ソース)
+        1:   58:    const int c6 = sl_cases::tc_sl06_first_failure();
+        1:   59:    const int c7 = sl_cases::tc_sl07_first_failure();
+        1:   60:    const int c8 = sl_cases::tc_sl08_first_failure();
+        1:   61:    const int c9 = sl_cases::tc_sl09_first_failure();
+        1:   62:    const int c10 = sl_cases::tc_sl10_first_failure();
+        1:   63:    const int c11 = sl_cases::tc_sl11_first_failure();
+        1:   64:    const int c22 = sl_cases::tc_sl22_first_failure();
+        1:   65:    const int c23 = sl_cases::tc_sl23_first_failure();
+        1:   66:    const int c24 = sl_cases::tc_sl24_first_failure();
+        1:   67:    int nfail = 0;
+        -:   68:
+        1:   69:    if (c6 < 0) {
+        1:   70:        th_puts("TC-SL-06 PASS\n");
+        -:   71:    } else {
+    #####:   72:        th_puts("TC-SL-06 FAIL case=");
+    #####:   73:        th_put_int(c6);
+    #####:   74:        th_putc('\n');
+    #####:   75:        ++nfail;
+        -:   76:    }
+        1:   77:    if (c7 < 0) {
+        1:   78:        th_puts("TC-SL-07 PASS\n");
+        -:   79:    } else {
+    #####:   80:        th_puts("TC-SL-07 FAIL case=");
+    #####:   81:        th_put_int(c7);
+    #####:   82:        th_putc('\n');
+    #####:   83:        ++nfail;
+        -:   84:    }
+        1:   85:    if (c8 < 0) {
+        1:   86:        th_puts("TC-SL-08 PASS\n");
+        -:   87:    } else {
+    #####:   88:        th_puts("TC-SL-08 FAIL case=");
+    #####:   89:        th_put_int(c8);
+    #####:   90:        th_putc('\n');
+    #####:   91:        ++nfail;
+        -:   92:    }
+        1:   93:    if (c9 < 0) {
+        1:   94:        th_puts("TC-SL-09 PASS\n");
+        -:   95:    } else {
+    #####:   96:        th_puts("TC-SL-09 FAIL case=");
+    #####:   97:        th_put_int(c9);
+    #####:   98:        th_putc('\n');
+    #####:   99:        ++nfail;
+        -:  100:    }
+        1:  101:    if (c10 < 0) {
+        1:  102:        th_puts("TC-SL-10 PASS\n");
+        -:  103:    } else {
+    #####:  104:        th_puts("TC-SL-10 FAIL case=");
+    #####:  105:        th_put_int(c10);
+    #####:  106:        th_putc('\n');
+    #####:  107:        ++nfail;
+        -:  108:    }
+        1:  109:    if (c11 < 0) {
+        1:  110:        th_puts("TC-SL-11 PASS\n");
+        -:  111:    } else {
+    #####:  112:        th_puts("TC-SL-11 FAIL case=");
+    #####:  113:        th_put_int(c11);
+    #####:  114:        th_putc('\n');
+    #####:  115:        ++nfail;
+        -:  116:    }
+        1:  117:    if (c22 < 0) {
+        1:  118:        th_puts("TC-SL-22 PASS\n");
+        -:  119:    } else {
+    #####:  120:        th_puts("TC-SL-22 FAIL case=");
+    #####:  121:        th_put_int(c22);
+    #####:  122:        th_putc('\n');
+    #####:  123:        ++nfail;
+        -:  124:    }
+        1:  125:    if (c23 < 0) {
+        1:  126:        th_puts("TC-SL-23 PASS\n");
+        -:  127:    } else {
+    #####:  128:        th_puts("TC-SL-23 FAIL case=");
+    #####:  129:        th_put_int(c23);
+    #####:  130:        th_putc('\n');
+    #####:  131:        ++nfail;
+        -:  132:    }
+        1:  133:    if (c24 < 0) {
+        1:  134:        th_puts("TC-SL-24 PASS\n");
+        -:  135:    } else {
+    #####:  136:        th_puts("TC-SL-24 FAIL case=");
+    #####:  137:        th_put_int(c24);
+    #####:  138:        th_putc('\n');
+    #####:  139:        ++nfail;
+        -:  140:    }
+        -:  141:
+        1:  142:    th_puts("SUMMARY pass=");
+        1:  143:    th_put_int(9 - nfail);
+        1:  144:    th_puts(" fail=");
+        1:  145:    th_put_int(nfail);
+        1:  146:    th_putc('\n');
+        1:  147:    ilibc_test_exit((nfail == 0) ? 0 : 1);
+        -:  148:}

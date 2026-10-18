@@ -1,0 +1,10 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_nodiscard.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_nodiscard.cpp:12:19: error: ignoring return value of ‘constexpr int ilibc::_itoa_s(int, char (&)[N], int) [with unsigned int N = 8]’, declared with attribute ‘nodiscard’ [-Werror=unused-result]
+   12 |     ilibc::_itoa_s(1, buf, 10);
+      |     ~~~~~~~~~~~~~~^~~~~~~~~~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:12,
+                 from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_nodiscard.cpp:6:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:169:29: note: declared here
+  169 | [[nodiscard]] constexpr int _itoa_s(int value, char (&buffer)[N], int radix) noexcept {
+      |                             ^~~~~~~
+cc1plus: all warnings being treated as errors

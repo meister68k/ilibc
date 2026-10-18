@@ -1,0 +1,4 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_stub_cmath.cpp:8:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cmath:6:4: error: #error "ilibc: <cmath> is not provided (no floating point). See ILIBC-OVR-001 section 4.3."
+    6 | #  error "ilibc: <cmath> is not provided (no floating point). See ILIBC-OVR-001 section 4.3."
+      |    ^~~~~

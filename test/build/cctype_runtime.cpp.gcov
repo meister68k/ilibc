@@ -1,0 +1,59 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/cases/cctype_runtime.cpp
+        -:    1:// cctype_runtime.cpp — <cctype>の実行時試験(R: TC-CT-08)。
+        -:    2:// spec/ilibc_cctype_spec.md §8: TC-CT-01・TC-CT-02を実行時にも行い、
+        -:    3:// constexpr の評価と実行時のコード生成の食い違いを検出する。
+        -:    4:// 引数は Opaque(volatile 経由)で渡して畳み込みを避ける(T3)。
+        -:    5:#include "../../common/ctype_cases.hpp"
+        -:    6:#include "../../common/harness/th_output.hpp"
+        -:    7:
+        -:    8:// プラットフォーム層(§5.6.2)。putc は th_output.hpp が宣言する。
+        -:    9:// [[noreturn]] の位置は e1_stdio.cpp の注記のとおり(GCCが受理する順)
+        -:   10:extern "C" [[noreturn]] void ilibc_test_exit(int status);
+        -:   11:
+        -:   12:// TC-CT-08: 13関数の全257値照合(0〜255の本体と c=-1)をOpaqueで実行し、
+        -:   13:// 失敗した検査を1行ずつ出力する。戻りは失敗した検査数
+        1:   14:static int run_tc_ct01(void) {
+        1:   15:    int failed = 0;
+       14:   16:    for (int which = 0; which < kFuncCount; ++which) {
+       13:   17:        if (!tc_ct01_neg1_ok(Opaque{}, which)) {
+    #####:   18:            th_puts("TC-CT-08 FAIL ct01.neg1 which=");
+    #####:   19:            th_put_int(which);
+    #####:   20:            th_putc('\n');
+    #####:   21:            ++failed;
+        -:   22:        }
+       13:   23:        const int v = tc_ct01_first_failure(Opaque{}, which);
+       13:   24:        if (v != -1) {
+    #####:   25:            th_puts("TC-CT-08 FAIL ct01 which=");
+    #####:   26:            th_put_int(which);
+    #####:   27:            th_puts(" value=");
+    #####:   28:            th_put_int(v);
+    #####:   29:            th_putc('\n');
+    #####:   30:            ++failed;
+        -:   31:        }
+        -:   32:    }
+        1:   33:    return failed;
+        -:   34:}
+        -:   35:
+        -:   36:// TC-CT-02: 極端値・ビット別名化をOpaqueで実行する。戻りは失敗数(0または1)
+        1:   37:static int run_tc_ct02(void) {
+        1:   38:    const int v = tc_ct02_first_failure(Opaque{});
+        1:   39:    if (v == -1) {
+        1:   40:        return 0;
+        -:   41:    }
+    #####:   42:    th_puts("TC-CT-08 FAIL ct02 value=");
+    #####:   43:    th_put_int(v);
+    #####:   44:    th_putc('\n');
+    #####:   45:    return 1;
+        -:   46:}
+        -:   47:
+        1:   48:int main(void) {
+        -:   49:    // 出力・終了はプラットフォーム層経由。ilibc の関数は使わない(R1)
+        1:   50:    const int failed = run_tc_ct01() + run_tc_ct02();
+        1:   51:    if (failed == 0) {
+        1:   52:        th_puts("TC-CT-08 PASS\n");
+        1:   53:        th_puts("SUMMARY pass=1 fail=0\n");
+        1:   54:        ilibc_test_exit(0);
+        -:   55:    }
+    #####:   56:    th_puts("SUMMARY pass=0 fail=1\n");
+    #####:   57:    ilibc_test_exit(1);
+        -:   58:}

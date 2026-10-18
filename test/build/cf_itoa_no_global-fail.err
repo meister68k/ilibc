@@ -1,0 +1,16 @@
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_no_global.cpp: In function ‘int main()’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_no_global.cpp:13:14: error: ‘::_itoa_s’ has not been declared; did you mean ‘ilibc::_itoa_s’?
+   13 |     return ::_itoa_s(1, buf, 10) + std::_itoa_s(1, buf, 10);
+      |              ^~~~~~~
+      |              ilibc::_itoa_s
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib:12,
+                 from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_no_global.cpp:6:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:169:29: note: ‘ilibc::_itoa_s’ declared here
+  169 | [[nodiscard]] constexpr int _itoa_s(int value, char (&buffer)[N], int radix) noexcept {
+      |                             ^~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_itoa_no_global.cpp:13:41: error: ‘_itoa_s’ is not a member of ‘std’; did you mean ‘ilibc::_itoa_s’?
+   13 |     return ::_itoa_s(1, buf, 10) + std::_itoa_s(1, buf, 10);
+      |                                         ^~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp:169:29: note: ‘ilibc::_itoa_s’ declared here
+  169 | [[nodiscard]] constexpr int _itoa_s(int value, char (&buffer)[N], int radix) noexcept {
+      |                             ^~~~~~~

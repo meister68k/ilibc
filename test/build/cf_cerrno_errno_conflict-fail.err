@@ -1,0 +1,11 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cerrno_errno_conflict.cpp:10:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cerrno:54:6: error: #error "ilibc: errno is already defined by another header."
+   54 | #    error "ilibc: errno is already defined by another header."
+      |      ^~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cerrno:59:11: error: "errno" redefined [-Werror]
+   59 | #  define errno  ILIBC_ERRNO
+      |           ^~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cerrno_errno_conflict.cpp:8:11: note: this is the location of the previous definition
+    8 | #  define errno 1
+      |           ^~~~~
+cc1plus: all warnings being treated as errors

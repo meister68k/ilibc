@@ -1,0 +1,223 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstring
+        -:    1:// cstring
+        -:    2:// The 18 <cstring> functions of ILIBC-STR-001 sections 2.1-2.2, adapted to
+        -:    3:// the namespace/asm-label macros of ILIBC-HDR-001 section 3.4.
+        -:    4:// The 13 string functions are constexpr inline (section 5). The five mem*
+        -:    5:// functions are declared here with fixed C link names and defined in
+        -:    6:// src/string/*.cpp (section 7.1); they are not constexpr for now because
+        -:    7:// C++23 constant expressions cannot convert from void* (section 6.2 case (a)).
+        -:    8:#pragma once
+        -:    9:
+        -:   10:#include <ilibc/config.hpp>
+        -:   11:#include <ilibc/string_mem.hpp>
+        -:   12:#include <cstddef>
+        -:   13:#include <cstdint>
+        -:   14:
+        -:   15:ILIBC_NS_BEGIN
+        -:   16:
+        -:   17:// ---------------------------------------------------------------- mem* (ST-01..ST-05)
+        -:   18:
+        -:   19:// Copy the first n bytes of s2 to s1; returns s1 (overlap is undefined) (5.1)
+        -:   20:ILIBC_NONNULL void *memcpy(void *s1, const void *s2, std::size_t n) noexcept
+        -:   21:    ILIBC_ASM_LABEL("memcpy");
+        -:   22:
+        -:   23:// Copy the first n bytes of s2 to s1, overlap-safe; returns s1 (5.1)
+        -:   24:ILIBC_NONNULL void *memmove(void *s1, const void *s2, std::size_t n) noexcept
+        -:   25:    ILIBC_ASM_LABEL("memmove");
+        -:   26:
+        -:   27:// Compare the first n bytes as unsigned char; byte difference (4.4, 5.1)
+        -:   28:[[nodiscard]] ILIBC_NONNULL int memcmp(const void *s1, const void *s2, std::size_t n) noexcept
+        -:   29:    ILIBC_ASM_LABEL("memcmp");
+        -:   30:
+        -:   31:// Set the first n bytes to (unsigned char)c; returns s (5.1)
+        -:   32:ILIBC_NONNULL void *memset(void *s, int c, std::size_t n) noexcept
+        -:   33:    ILIBC_ASM_LABEL("memset");
+        -:   34:
+        -:   35:// Find the first byte equal to (unsigned char)c in the first n bytes; returns
+        -:   36:// its address or nullptr (n == 0 included) (5.1 ST-04). The two overloads are
+        -:   37:// inline wrappers over memchr_base, which carries the C link name "memchr"
+        -:   38:// (7.2). The argument check lives in the base body (4.7).
+        3:   39:[[nodiscard]] ILIBC_NONNULL inline const void *memchr(const void *s, int c,
+        -:   40:                                                      std::size_t n) noexcept {
+        3:   41:    return ilibc::detail::memchr_base(s, c, n);
+        -:   42:}
+       64:   43:[[nodiscard]] ILIBC_NONNULL inline void *memchr(void *s, int c, std::size_t n) noexcept {
+       64:   44:    return ilibc::detail::memchr_base(s, c, n);
+        -:   45:}
+        -:   46:
+        -:   47:// ------------------------------------------------- copy and concatenate (ST-06..ST-09)
+        -:   48:
+        -:   49:// Copy s2 including its terminator to s1; returns s1 (overlap is undefined) (5.2)
+        1:   50:ILIBC_NONNULL constexpr char *strcpy(char *s1, const char *s2) noexcept {
+        -:   51:    ILIBC_ASSERT(s1 != nullptr);
+        -:   52:    ILIBC_ASSERT(s2 != nullptr);
+        1:   53:    std::size_t i = 0;
+        3:   54:    while ((s1[i] = s2[i]) != '\0') { ++i; }        // copy up to and incl. terminator
+        1:   55:    return s1;
+        -:   56:}
+        -:   57:
+        -:   58:// Copy at most n characters of s2 to s1, padding with '\0'; returns s1.
+        -:   59:// Writes exactly n bytes: s1 is NOT terminated when s2 is n+ characters (5.2).
+        2:   60:ILIBC_NONNULL constexpr char *strncpy(char *s1, const char *s2, std::size_t n) noexcept {
+        -:   61:    ILIBC_ASSERT(s1 != nullptr);
+        -:   62:    ILIBC_ASSERT(s2 != nullptr);
+        2:   63:    std::size_t i = 0;
+        9:   64:    while (i < n && s2[i] != '\0') { s1[i] = s2[i]; ++i; }   // copy characters
+        5:   65:    while (i < n) { s1[i] = '\0'; ++i; }                     // pad the remainder
+        2:   66:    return s1;
+        -:   67:}
+        -:   68:
+        -:   69:// Append s2 (including its terminator) to s1; returns s1 (overlap undefined) (5.2)
+        1:   70:ILIBC_NONNULL constexpr char *strcat(char *s1, const char *s2) noexcept {
+        -:   71:    ILIBC_ASSERT(s1 != nullptr);
+        -:   72:    ILIBC_ASSERT(s2 != nullptr);
+        1:   73:    std::size_t i = 0;
+        3:   74:    while (s1[i] != '\0') { ++i; }                   // find the end of s1
+        1:   75:    std::size_t j = 0;
+        3:   76:    while ((s1[i + j] = s2[j]) != '\0') { ++j; }     // copy up to and incl. terminator
+        1:   77:    return s1;
+        -:   78:}
+        -:   79:
+        -:   80:// Append at most n characters of s2 to s1, then always terminate; returns s1 (5.2)
+        2:   81:ILIBC_NONNULL constexpr char *strncat(char *s1, const char *s2, std::size_t n) noexcept {
+        -:   82:    ILIBC_ASSERT(s1 != nullptr);
+        -:   83:    ILIBC_ASSERT(s2 != nullptr);
+        2:   84:    std::size_t i = 0;
+        6:   85:    while (s1[i] != '\0') { ++i; }                   // find the end of s1
+        2:   86:    std::size_t j = 0;
+        4:   87:    while (j < n && s2[j] != '\0') { s1[i + j] = s2[j]; ++j; }
+        2:   88:    s1[i + j] = '\0';                                // terminator is written always
+        2:   89:    return s1;
+        -:   90:}
+        -:   91:
+        -:   92:// --------------------------------------------------------- compare (ST-10, ST-11)
+        -:   93:
+        -:   94:// Compare two strings as unsigned char; byte difference (4.4, 5.3)
+        -:   95:[[nodiscard]] ILIBC_NONNULL constexpr int strcmp(const char *s1, const char *s2) noexcept {
+        -:   96:    ILIBC_ASSERT(s1 != nullptr);
+        -:   97:    ILIBC_ASSERT(s2 != nullptr);
+        -:   98:    std::size_t i = 0;
+        -:   99:    while (s1[i] != '\0' && s1[i] == s2[i]) { ++i; }
+        -:  100:    return static_cast<int>(static_cast<unsigned char>(s1[i]))
+        -:  101:         - static_cast<int>(static_cast<unsigned char>(s2[i]));
+        -:  102:}
+        -:  103:
+        -:  104:// Compare at most n characters; stops at a terminator; byte difference (4.4, 5.3)
+        -:  105:[[nodiscard]] ILIBC_NONNULL constexpr int strncmp(const char *s1, const char *s2,
+        -:  106:                                                   std::size_t n) noexcept {
+        -:  107:    ILIBC_ASSERT(s1 != nullptr);
+        -:  108:    ILIBC_ASSERT(s2 != nullptr);
+        -:  109:    for (std::size_t i = 0; i < n; ++i) {
+        -:  110:        const unsigned char a = static_cast<unsigned char>(s1[i]);
+        -:  111:        const unsigned char b = static_cast<unsigned char>(s2[i]);
+        -:  112:        if (a != b) { return static_cast<int>(a) - static_cast<int>(b); }
+        -:  113:        if (a == '\0') { return 0; }
+        -:  114:    }
+        -:  115:    return 0;
+        -:  116:}
+        -:  117:
+        -:  118:// ------------------------------------------------------------- search (ST-12..ST-17)
+        -:  119:
+        -:  120:// Find the first character equal to (char)c, the terminator included;
+        -:  121:// returns its address or nullptr (5.4)
+        -:  122:[[nodiscard]] ILIBC_NONNULL constexpr const char *strchr(const char *s, int c) noexcept {
+        -:  123:    ILIBC_ASSERT(s != nullptr);
+        -:  124:    const char ch = static_cast<char>(c);
+        -:  125:    for (;; ++s) {
+        -:  126:        if (*s == ch) { return s; }                  // equality is tested first
+        -:  127:        if (*s == '\0') { return nullptr; }
+        -:  128:    }
+        -:  129:}
+        -:  130:[[nodiscard]] ILIBC_NONNULL constexpr char *strchr(char *s, int c) noexcept {
+        -:  131:    return const_cast<char *>(strchr(static_cast<const char *>(s), c));
+        -:  132:}
+        -:  133:
+        -:  134:// Find the last character equal to (char)c, the terminator included;
+        -:  135:// returns its address or nullptr (5.4)
+        -:  136:[[nodiscard]] ILIBC_NONNULL constexpr const char *strrchr(const char *s, int c) noexcept {
+        -:  137:    ILIBC_ASSERT(s != nullptr);
+        -:  138:    const char ch = static_cast<char>(c);
+        -:  139:    const char *last = nullptr;
+        -:  140:    for (;; ++s) {
+        -:  141:        if (*s == ch) { last = s; }
+        -:  142:        if (*s == '\0') { return last; }
+        -:  143:    }
+        -:  144:}
+        -:  145:[[nodiscard]] ILIBC_NONNULL constexpr char *strrchr(char *s, int c) noexcept {
+        -:  146:    return const_cast<char *>(strrchr(static_cast<const char *>(s), c));
+        -:  147:}
+        -:  148:
+        -:  149:// Find the first occurrence of string s2 in s1; returns its address, or s1
+        -:  150:// itself when s2 is empty, or nullptr (5.4)
+        -:  151:[[nodiscard]] ILIBC_NONNULL constexpr const char *strstr(const char *s1, const char *s2) noexcept {
+        -:  152:    ILIBC_ASSERT(s1 != nullptr);
+        -:  153:    ILIBC_ASSERT(s2 != nullptr);
+        -:  154:    if (*s2 == '\0') { return s1; }
+        -:  155:    for (; *s1 != '\0'; ++s1) {
+        -:  156:        std::size_t i = 0;
+        -:  157:        while (s2[i] != '\0' && s1[i] == s2[i]) { ++i; }
+        -:  158:        if (s2[i] == '\0') { return s1; }            // s2 matched to the end
+        -:  159:    }
+        -:  160:    return nullptr;
+        -:  161:}
+        -:  162:[[nodiscard]] ILIBC_NONNULL constexpr char *strstr(char *s1, const char *s2) noexcept {
+        -:  163:    return const_cast<char *>(strstr(static_cast<const char *>(s1), s2));
+        -:  164:}
+        -:  165:
+        -:  166:// Length of the leading run of characters that all occur in s2; 0 if s2 is
+        -:  167:// empty (5.4)
+        -:  168:[[nodiscard]] ILIBC_NONNULL constexpr std::size_t strspn(const char *s1, const char *s2) noexcept {
+        -:  169:    ILIBC_ASSERT(s1 != nullptr);
+        -:  170:    ILIBC_ASSERT(s2 != nullptr);
+        -:  171:    std::size_t n = 0;
+        -:  172:    while (s1[n] != '\0') {
+        -:  173:        const char *p = s2;
+        -:  174:        while (*p != '\0' && *p != s1[n]) { ++p; }   // look s1[n] up in s2
+        -:  175:        if (*p == '\0') { break; }                   // not found: stop
+        -:  176:        ++n;
+        -:  177:    }
+        -:  178:    return n;
+        -:  179:}
+        -:  180:
+        -:  181:// Length of the leading run of characters that do not occur in s2; equals
+        -:  182:// strlen(s1) when s2 is empty (5.4)
+        -:  183:[[nodiscard]] ILIBC_NONNULL constexpr std::size_t strcspn(const char *s1, const char *s2) noexcept {
+        -:  184:    ILIBC_ASSERT(s1 != nullptr);
+        -:  185:    ILIBC_ASSERT(s2 != nullptr);
+        -:  186:    std::size_t n = 0;
+        -:  187:    while (s1[n] != '\0') {
+        -:  188:        const char *p = s2;
+        -:  189:        while (*p != '\0' && *p != s1[n]) { ++p; }
+        -:  190:        if (*p != '\0') { break; }                   // found: stop
+        -:  191:        ++n;
+        -:  192:    }
+        -:  193:    return n;
+        -:  194:}
+        -:  195:
+        -:  196:// Find the first character of s1 that occurs in s2 (the terminator excluded);
+        -:  197:// returns its address or nullptr (5.4)
+        -:  198:[[nodiscard]] ILIBC_NONNULL constexpr const char *strpbrk(const char *s1, const char *s2) noexcept {
+        -:  199:    ILIBC_ASSERT(s1 != nullptr);
+        -:  200:    ILIBC_ASSERT(s2 != nullptr);
+        -:  201:    for (; *s1 != '\0'; ++s1) {
+        -:  202:        for (const char *p = s2; *p != '\0'; ++p) {
+        -:  203:            if (*p == *s1) { return s1; }
+        -:  204:        }
+        -:  205:    }
+        -:  206:    return nullptr;
+        -:  207:}
+        -:  208:[[nodiscard]] ILIBC_NONNULL constexpr char *strpbrk(char *s1, const char *s2) noexcept {
+        -:  209:    return const_cast<char *>(strpbrk(static_cast<const char *>(s1), s2));
+        -:  210:}
+        -:  211:
+        -:  212:// ------------------------------------------------------------------- strlen (ST-18)
+        -:  213:
+        -:  214:// Number of characters before the terminator (5.5)
+        -:  215:[[nodiscard]] ILIBC_NONNULL constexpr std::size_t strlen(const char *s) noexcept {
+        -:  216:    ILIBC_ASSERT(s != nullptr);
+        -:  217:    std::size_t n = 0;
+        -:  218:    while (s[n] != '\0') { ++n; }
+        -:  219:    return n;
+        -:  220:}
+        -:  221:
+        -:  222:ILIBC_NS_END

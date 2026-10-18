@@ -1,0 +1,22 @@
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:18,
+                 from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/compilefail/cf_cstdio_host_test_independent.cpp:14:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/io_backend.hpp:81:4: error: #error "ilibc: <cstdio> is not provided (no I/O). Define ILIBC_IO_BACKEND_POSIX (or ILIBC_HOST_IO_TEST) before including <cstdio>. See ILIBC-IO-001 section 5.1."
+   81 | #  error "ilibc: <cstdio> is not provided (no I/O). Define ILIBC_IO_BACKEND_POSIX (or ILIBC_HOST_IO_TEST) before including <cstdio>. See ILIBC-IO-001 section 5.1."
+      |    ^~~~~
+In file included from /mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:19:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/io_sink.hpp: In function ‘std::size_t ilibc::detail::fd_write_n(int, const void*, std::size_t)’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/io_sink.hpp:42:23: error: ‘write_some’ was not declared in this scope
+   42 |         const int w = write_some(fd, p + off, static_cast<unsigned int>(chunk));
+      |                       ^~~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio: In function ‘char* ilibc::fgets(char*, int, int, int*)’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:137:31: error: ‘read_some’ is not a member of ‘ilibc::detail’
+  137 |         const int r = detail::read_some(fd, &c, 1, err);
+      |                               ^~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio: In function ‘int ilibc::fgetc(int, int*)’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:184:27: error: ‘read_some’ is not a member of ‘ilibc::detail’
+  184 |     const int r = detail::read_some(fd, &c, 1, err);
+      |                           ^~~~~~~~~
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio: In function ‘std::size_t ilibc::fread(void*, std::size_t, std::size_t, int, int*)’:
+/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdio:226:31: error: ‘read_some’ is not a member of ‘ilibc::detail’
+  226 |         const int r = detail::read_some(fd, dst + got, chunk, err);
+      |                               ^~~~~~~~~

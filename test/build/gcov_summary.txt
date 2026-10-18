@@ -1,0 +1,77 @@
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/ctype_cases.hpp'
+Lines executed:97.83% of 46
+Creating 'ctype_cases.hpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/oracle/ctype_ref.hpp'
+Lines executed:100.00% of 50
+Creating 'ctype_ref.hpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/cases/cctype_runtime.cpp'
+Lines executed:51.52% of 33
+Creating 'cctype_runtime.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/harness/th_output.hpp'
+Lines executed:77.38% of 84
+Creating 'th_output.hpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cctype'
+Lines executed:100.00% of 29
+Creating 'cctype.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/platform/e1_stdio.cpp'
+Lines executed:100.00% of 20
+Creating 'e1_stdio.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/cases/cstring_runtime.cpp'
+Lines executed:75.49% of 102
+Creating 'cstring_runtime.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/str_cases.hpp'
+Lines executed:99.42% of 172
+Creating 'str_cases.hpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstring'
+Lines executed:100.00% of 26
+Creating 'cstring.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memchr.cpp'
+Lines executed:100.00% of 3
+Creating 'memchr.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/string_mem.hpp'
+Lines executed:86.96% of 23
+Creating 'string_mem.hpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memcmp.cpp'
+Lines executed:100.00% of 3
+Creating 'memcmp.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memcpy.cpp'
+Lines executed:100.00% of 3
+Creating 'memcpy.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memmove.cpp'
+Lines executed:100.00% of 7
+Creating 'memmove.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/src/string/memset.cpp'
+Lines executed:100.00% of 3
+Creating 'memset.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/cases/cstdlib_runtime.cpp'
+Lines executed:55.79% of 95
+Creating 'cstdlib_runtime.cpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/sl_cases.hpp'
+Lines executed:82.64% of 409
+Creating 'sl_cases.hpp.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/cstdlib'
+Lines executed:100.00% of 9
+Creating 'cstdlib.gcov'
+
+File '/mnt/share/disk/synchome/projects/BaTTaX/ilibc/include/ilibc/stdlib.hpp'
+Lines executed:100.00% of 78
+Creating 'stdlib.hpp.gcov'
+
+Lines executed:85.10% of 1195

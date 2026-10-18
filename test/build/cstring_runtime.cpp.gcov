@@ -1,0 +1,182 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/target/cases/cstring_runtime.cpp
+        -:    1:// cstring_runtime.cpp — <cstring>のE1実行時試験(R: TC-ST-11)。
+        -:    2:// 先頭でブートストラップ(spec/ilibc_test_spec.md §5.8)を行い、mem* 5関数を
+        -:    3:// 短い固定データで最小検査してから、TC-ST-07〜09を共有本体 str_cases.hpp で
+        -:    4:// 実行する(spec/ilibc_cstring_spec.md §9)。
+        -:    5:// データ設定・照合は volatile のループで行い、ライブラリに依存しない(R1/R4)。
+        -:    6:#include "../../common/harness/th_output.hpp"
+        -:    7:#include "../../common/str_cases.hpp"
+        -:    8:
+        -:    9:// プラットフォーム層(§5.6.2)。putc は th_output.hpp が宣言する。
+        -:   10:// [[noreturn]] の位置は e1_stdio.cpp の注記のとおり(GCCが受理する順)
+        -:   11:extern "C" [[noreturn]] void ilibc_test_exit(int status);
+        -:   12:
+        -:   13:// 試験対象の名前空間(T1)。E1 では std(=ilibc本体)。
+        -:   14:namespace t = ILIBC_NS;
+        -:   15:
+        -:   16:// volatile 配列を mem* の void* 引数にする(cast away volatile)
+        4:   17:static void *as_void(volatile unsigned char *p) {
+        4:   18:    return const_cast<unsigned char *>(p);
+        -:   19:}
+       10:   20:static const void *as_cvoid(const volatile unsigned char *p) {
+       10:   21:    return const_cast<const unsigned char *>(p);
+        -:   22:}
+        -:   23:
+        -:   24:// volatile 配列2本の先頭16バイトを照合する(§5.8: volatile スカラー変数のループ)
+        4:   25:static int vol_match(const volatile unsigned char *x, const volatile unsigned char *y) {
+        4:   26:    int same = 1;
+       68:   27:    for (int i = 0; i < 16; ++i) {
+       64:   28:        volatile const unsigned char vx = x[i];
+       64:   29:        volatile const unsigned char vy = y[i];
+       64:   30:        if (vx != vy) {
+    #####:   31:            same = 0;
+        -:   32:        }
+        -:   33:    }
+        4:   34:    return same;
+        -:   35:}
+        -:   36:
+        -:   37:// ブートストラップ(§5.8): mem* 5関数を、短い固定データ(16バイト)で検査する。
+        -:   38:// 集成体初期化を使わず、データは1バイトずつ設定する(R4)。
+        -:   39:// 成功で1、失敗で0を返す(呼び出し側が BOOTSTRAP FAIL・終了コード2で止める)。
+        1:   40:static int bootstrap(void) {
+        -:   41:    volatile unsigned char a[16];
+        -:   42:    volatile unsigned char b[16];
+        -:   43:    volatile unsigned char c[16];
+        -:   44:    volatile unsigned char w[16];
+       17:   45:    for (int i = 0; i < 16; ++i) {
+       16:   46:        a[i] = static_cast<unsigned char>(i * 7 + 1);
+       16:   47:        b[i] = static_cast<unsigned char>(0x80 + i);
+       16:   48:        c[i] = 0xA5;
+       16:   49:        w[i] = 0xA5;
+        -:   50:    }
+        -:   51:
+        -:   52:    // (1) memset: a[0,12) = 0x3C、カナリア a[12,16) は初期パターンのまま
+        1:   53:    t::memset(as_void(a), 0x3C, 12);
+       17:   54:    for (int i = 0; i < 16; ++i) {
+       16:   55:        w[i] = static_cast<unsigned char>((i < 12) ? 0x3C : (i * 7 + 1));
+        -:   56:    }
+        1:   57:    if (!vol_match(a, w)) {
+    #####:   58:        return 0;
+        -:   59:    }
+        -:   60:
+        -:   61:    // (2) memcpy: b[0,12) を a に複製、カナリアは維持
+        5:   62:    for (int i = 12; i < 16; ++i) {
+        4:   63:        a[i] = 0xA5;
+        -:   64:    }
+        1:   65:    t::memcpy(as_void(a), as_cvoid(b), 12);
+       17:   66:    for (int i = 0; i < 16; ++i) {
+       16:   67:        w[i] = static_cast<unsigned char>((i < 12) ? (0x80 + i) : 0xA5);
+        -:   68:    }
+        1:   69:    if (!vol_match(a, w)) {
+    #####:   70:        return 0;
+        -:   71:    }
+        -:   72:
+        -:   73:    // (3) memmove 前方重複: a[0,10) を a[2,12) へ。結果は退避 c から作る
+       17:   74:    for (int i = 0; i < 16; ++i) {
+       16:   75:        c[i] = a[i];
+        -:   76:    }
+        1:   77:    t::memmove(as_void(a + 2), as_cvoid(a), 10);
+       17:   78:    for (int i = 0; i < 16; ++i) {
+       16:   79:        if (i < 2) {
+        2:   80:            w[i] = c[i];
+       14:   81:        } else if (i < 12) {
+       10:   82:            w[i] = c[i - 2];
+        -:   83:        } else {
+        4:   84:            w[i] = 0xA5;
+        -:   85:        }
+        -:   86:    }
+        1:   87:    if (!vol_match(a, w)) {
+    #####:   88:        return 0;
+        -:   89:    }
+        -:   90:
+        -:   91:    // (4) memmove 後方重複: a[2,12) を a[0,10) へ
+       17:   92:    for (int i = 0; i < 16; ++i) {
+       16:   93:        c[i] = a[i];
+        -:   94:    }
+        1:   95:    t::memmove(as_void(a), as_cvoid(a + 2), 10);
+       17:   96:    for (int i = 0; i < 16; ++i) {
+       16:   97:        if (i < 10) {
+       10:   98:            w[i] = c[i + 2];
+        6:   99:        } else if (i < 12) {
+        2:  100:            w[i] = c[i];
+        -:  101:        } else {
+        4:  102:            w[i] = 0xA5;
+        -:  103:        }
+        -:  104:    }
+        1:  105:    if (!vol_match(a, w)) {
+    #####:  106:        return 0;
+        -:  107:    }
+        -:  108:
+        -:  109:    // (5) memcmp: 同一なら0、退避前の中身(c)とは1バイトでも異なる
+        1:  110:    const volatile int r_eq = t::memcmp(as_cvoid(a), as_cvoid(a), 12);
+        1:  111:    const volatile int r_ne = t::memcmp(as_cvoid(a), as_cvoid(c), 12);
+        1:  112:    if (r_eq != 0) {
+    #####:  113:        return 0;
+        -:  114:    }
+        1:  115:    if (r_ne == 0) {
+    #####:  116:        return 0;
+        -:  117:    }
+        -:  118:
+        -:  119:    // (6) memchr: 既知の値を設定して、位置11の発見・不発見・n=0 を検査する
+       17:  120:    for (int i = 0; i < 16; ++i) {
+       16:  121:        a[i] = static_cast<unsigned char>((i < 12) ? (i * 3 + 5) : 0xA5);
+        -:  122:    }
+        1:  123:    const void *p = t::memchr(as_cvoid(a), 0x26, 12);  // a[11] = 11*3+5 = 0x26
+        1:  124:    if (p == nullptr) {
+    #####:  125:        return 0;
+        -:  126:    }
+        1:  127:    if ((static_cast<const volatile unsigned char *>(p) - a) != 11) {
+    #####:  128:        return 0;
+        -:  129:    }
+        1:  130:    if (t::memchr(as_cvoid(a), 0x19, 12) != nullptr) {  // 0x19 は範囲に無い
+    #####:  131:        return 0;
+        -:  132:    }
+        1:  133:    if (t::memchr(as_cvoid(a), 0x26, 0) != nullptr) {  // n=0 は必ず不発見
+    #####:  134:        return 0;
+        -:  135:    }
+        1:  136:    return 1;
+        -:  137:}
+        -:  138:
+        1:  139:int main(void) {
+        -:  140:    // まずブートストラップ(§5.8)。失敗したら以降の実行時試験は行わない
+        1:  141:    if (!bootstrap()) {
+    #####:  142:        th_puts("BOOTSTRAP FAIL\n");
+    #####:  143:        ilibc_test_exit(2);
+        -:  144:    }
+        -:  145:
+        -:  146:    // TC-ST-07〜09: ホスト差分と同じ共有本体(H: TST §5.2 単一ソース)
+        1:  147:    const int c7 = str_cases::tc_st07_first_failure();
+        1:  148:    const int c8 = str_cases::tc_st08_first_failure();
+        1:  149:    const int c9 = str_cases::tc_st09_first_failure();
+        1:  150:    int nfail = 0;
+        1:  151:    if (c7 < 0) {
+        1:  152:        th_puts("TC-ST-07 PASS\n");
+        -:  153:    } else {
+    #####:  154:        th_puts("TC-ST-07 FAIL str_cases.hpp case=");
+    #####:  155:        th_put_int(c7);
+    #####:  156:        th_putc('\n');
+    #####:  157:        ++nfail;
+        -:  158:    }
+        1:  159:    if (c8 < 0) {
+        1:  160:        th_puts("TC-ST-08 PASS\n");
+        -:  161:    } else {
+    #####:  162:        th_puts("TC-ST-08 FAIL str_cases.hpp case=");
+    #####:  163:        th_put_int(c8);
+    #####:  164:        th_putc('\n');
+    #####:  165:        ++nfail;
+        -:  166:    }
+        1:  167:    if (c9 < 0) {
+        1:  168:        th_puts("TC-ST-09 PASS\n");
+        -:  169:    } else {
+    #####:  170:        th_puts("TC-ST-09 FAIL str_cases.hpp case=");
+    #####:  171:        th_put_int(c9);
+    #####:  172:        th_putc('\n');
+    #####:  173:        ++nfail;
+        -:  174:    }
+        1:  175:    th_puts("SUMMARY pass=");
+        1:  176:    th_put_int(3 - nfail);
+        1:  177:    th_puts(" fail=");
+        1:  178:    th_put_int(nfail);
+        1:  179:    th_putc('\n');
+        1:  180:    ilibc_test_exit((nfail == 0) ? 0 : 1);
+        -:  181:}

@@ -1,0 +1,252 @@
+// <cstdio>
+// I/O-dependent output and input extension, conditionally public
+// (ILIBC-IO-001 sections 2.2, 5-10 and 14). A backend selection macro
+// must be defined before the first include; without one the include is a
+// hard #error raised by <ilibc/io_backend.hpp> (section 5.2), while
+// <ilibc/format.hpp> alone stays usable without any I/O (section 1).
+// Header-only: the extension adds no ilibc.a object (section 10).
+// ILIBC_STUB_PASSTHROUGH keeps the host-facility passthrough of
+// ILIBC-HDR-001 section 7.3 S3 working and takes precedence, so test
+// code that asks for host declarations never sees the backend rules.
+#pragma once
+
+#if defined(ILIBC_STUB_PASSTHROUGH)
+#  include_next <cstdio>
+#else
+
+#  include <ilibc/format.hpp>
+#  include <ilibc/io_backend.hpp>  // section 5.2: always included, #errors here
+#  include <ilibc/io_sink.hpp>
+#  include <climits>
+#  include <cstddef>
+#  include <cstdint>
+#  include <utility>
+
+namespace ilibc {
+
+// Formatted write to fd (ILIBC-IO-001 sections 2.2, 6): the compiled
+// plan is emitted through an fd_sink, so the argument expressions are
+// evaluated once, a failed or over-long count reports -1, and the NUL
+// terminator is never part of the output.
+template <detail::fixed_string F, class... Args>
+int fprint_f(int fd, Args &&...args) noexcept {
+    detail::check_format<F, Args...>();
+    detail::fd_sink sink(fd);
+    if (!detail::emit_steps<F, 0>(sink, std::forward<Args>(args)...)) {
+        return -1;
+    }
+    return static_cast<int>(sink.n);
+}
+
+// print_f writes to the standard output fd (fd = 1; section 2.2)
+template <detail::fixed_string F, class... Args>
+int print_f(Args &&...args) noexcept {
+    return fprint_f<F>(1, std::forward<Args>(args)...);
+}
+
+// Writes the unsigned char conversion of ch to fd and returns that value
+// on success, -1 on a failed write (ILIBC-IO-001 sections 2.2, 6, 8).
+// The input int is never range-checked; only its low byte is sent.
+inline int fputc(int ch, int fd) noexcept {
+    const unsigned char c = static_cast<unsigned char>(ch);
+    if (detail::fd_write_n(fd, &c, 1) != 1) {
+        return -1;
+    }
+    return static_cast<int>(c);
+}
+
+// fputc on the standard output fd (section 2.2)
+inline int putchar(int ch) noexcept { return fputc(ch, 1); }
+
+// Writes s (no trailing newline) to fd and returns the byte count, or -1
+// when the count would exceed INT_MAX or the write fails
+// (ILIBC-IO-001 sections 2.2, 6, 8). The size is detected before any
+// output so an unreportable length never reaches the backend.
+inline int fputs(const char *s, int fd) noexcept {
+    const std::size_t len = detail::cstr_len(s);
+    if (len > static_cast<std::size_t>(INT_MAX)) {
+        return -1;
+    }
+    if (detail::fd_write_n(fd, s, len) != len) {
+        return -1;
+    }
+    return static_cast<int>(len);
+}
+
+// putstr is fputs on the standard output fd (section 8)
+inline int putstr(const char *s) noexcept { return fputs(s, 1); }
+
+// Writes s followed by one '\n' byte to the standard output fd and
+// returns the byte count including that newline (sections 2.2, 6, 8).
+// The two bytes are separate writes: atomicity is not guaranteed, so a
+// failed newline still reports -1 after s has gone out (section 5.2).
+inline int puts(const char *s) noexcept {
+    const std::size_t len = detail::cstr_len(s);
+    if (len >= static_cast<std::size_t>(INT_MAX)) {
+        return -1;  // len + 1 would overflow the int return value
+    }
+    if (detail::fd_write_n(1, s, len) != len) {
+        return -1;
+    }
+    if (detail::fd_write_n(1, "\n", 1) != 1) {
+        return -1;
+    }
+    return static_cast<int>(len) + 1;
+}
+
+// Sends size*count bytes to fd (ILIBC-IO-001 sections 6, 8): 0 when a
+// dimension is zero or when size*count overflows std::size_t (detected
+// before any output), the full element count on success, and the number
+// of completely written elements when the write stops early. A trailing
+// partial element has been sent but is not counted (section 6).
+inline std::size_t fwrite(const void *ptr, std::size_t size, std::size_t count, int fd) noexcept {
+    if (size == 0 || count == 0) {
+        return 0;
+    }
+    if (count > SIZE_MAX / size) {
+        return 0;  // size * count overflows std::size_t
+    }
+    const std::size_t total = size * count;
+    const std::size_t sent = detail::fd_write_n(fd, ptr, total);
+    if (sent == total) {
+        return count;
+    }
+    return sent / size;  // complete elements only
+}
+
+// ---------------------------------------------------------------- input (section 14)
+//
+// The input overloads follow the same rule: the omitted-err overload
+// passes &detail::g_errno explicitly instead of using a default argument,
+// so ILIBC_HOST_TEST can never capture the host errno macro (section
+// 14.1, decision IO-07). err == nullptr discards the error report, and
+// success or EOF never writes *err (section 14.5).
+
+// Reads one line into buffer (section 14.2): stores bytes up to and
+// including '\n', otherwise at most size-1 payload bytes, and always
+// NUL-terminates on success. No lookahead and no internal buffering:
+// every payload byte costs exactly one single-byte read_some call. EOF
+// before the first byte returns nullptr with buffer untouched; EOF after
+// at least one byte returns buffer with the partial line; a read error
+// returns nullptr and has already reported through err. Contract (not
+// checked): size >= 2 and buffer holds size writable bytes.
+inline char *fgets(char *buffer, int size, int fd, int *err) noexcept {
+    int n = 0;  // payload bytes stored so far
+    for (;;) {
+        char c;
+        const int r = detail::read_some(fd, &c, 1, err);
+        if (r < 0) {
+            return nullptr;  // error: read_some reported through err
+        }
+        if (r == 0) {
+            if (n == 0) {
+                return nullptr;  // EOF before the first byte
+            }
+            break;  // EOF after a partial line: terminate and return it
+        }
+        buffer[n++] = c;
+        if (c == '\n' || n == size - 1) {
+            break;  // newline stored, or buffer full: stop reading
+        }
+    }
+    buffer[n] = '\0';
+    return buffer;
+}
+
+// fgets with the default error sink (section 14.1)
+inline char *fgets(char *buffer, int size, int fd) noexcept {
+    return fgets(buffer, size, fd, &detail::g_errno);
+}
+
+// Array-reference-only gets (section 14.1): there is deliberately no
+// char* overload, and the element count is checked at compile time so
+// the delegation to fgets(size = N) cannot exceed int range. N >= 2
+// matches the fgets size >= 2 contract.
+template <std::size_t N>
+char *gets(char (&buffer)[N], int fd, int *err) noexcept {
+    static_assert(N >= 2 && N <= static_cast<std::size_t>(INT_MAX),
+                  "ilibc: gets needs an array of 2..INT_MAX elements");
+    return fgets(buffer, static_cast<int>(N), fd, err);
+}
+
+// gets with the default fd (0) and default error sink (section 14.1)
+template <std::size_t N>
+char *gets(char (&buffer)[N], int fd = 0) noexcept {
+    return gets(buffer, fd, &detail::g_errno);
+}
+
+// Reads one byte as an unsigned char value in 0..255, or -1 for EOF and
+// for errors (section 14.3). EOF leaves *err untouched; only a read
+// error writes it, so a caller distinguishes the two by clearing the
+// sink first (clear_errno). No pushback or internal state.
+inline int fgetc(int fd, int *err) noexcept {
+    unsigned char c;
+    const int r = detail::read_some(fd, &c, 1, err);
+    if (r != 1) {
+        return -1;  // EOF (err untouched) or error (err already written)
+    }
+    return static_cast<int>(c);
+}
+
+// fgetc with the default error sink (section 14.1)
+inline int fgetc(int fd) noexcept { return fgetc(fd, &detail::g_errno); }
+
+// fgetc on the standard input fd (fd = 0; section 14.3)
+inline int getchar(int *err) noexcept { return fgetc(0, err); }
+
+// getchar with the default error sink (section 14.1)
+inline int getchar() noexcept { return fgetc(0, &detail::g_errno); }
+
+// Reads size*count bytes into buffer (section 14.4): returns 0 without
+// touching fd when a dimension is zero or size*count overflows
+// std::size_t (detected before any read), otherwise the number of
+// completely read elements. Short reads are retried inside the loop
+// (read_some caps each request at INT_MAX, decision IO-08); EOF stops
+// the loop with err untouched, a read error stops it with err written
+// and still reports only complete elements. Trailing partial bytes may
+// remain in buffer. Contract (not checked): buffer holds size*count
+// writable bytes.
+inline std::size_t fread(void *buffer, std::size_t size, std::size_t count,
+                         int fd, int *err) noexcept {
+    if (size == 0 || count == 0) {
+        return 0;
+    }
+    if (count > SIZE_MAX / size) {
+        return 0;  // size * count overflows std::size_t
+    }
+    const std::size_t total = size * count;
+    unsigned char *const dst = static_cast<unsigned char *>(buffer);
+    std::size_t got = 0;
+    while (got < total) {
+        const std::size_t remain = total - got;
+        const unsigned int chunk =
+            (remain > static_cast<std::size_t>(UINT_MAX))
+                ? UINT_MAX
+                : static_cast<unsigned int>(remain);
+        const int r = detail::read_some(fd, dst + got, chunk, err);
+        if (r <= 0) {
+            break;  // EOF: err untouched; error: read_some wrote err
+        }
+        got += static_cast<std::size_t>(r);
+    }
+    return got / size;  // complete elements only
+}
+
+// fread with the default error sink (section 14.1)
+inline std::size_t fread(void *buffer, std::size_t size, std::size_t count,
+                         int fd) noexcept {
+    return fread(buffer, size, count, fd, &detail::g_errno);
+}
+
+}  // namespace ilibc
+
+// Optional printf-compatible macro (ILIBC-IO-001 section 9): expands to
+// print_f with the literal as the compile-time format and accepts zero
+// value arguments. Defined only when ILIBC_ENABLE_PRINTF_MACRO is set
+// before this include; no other compatibility macro exists. Callers that
+// include headers using the printf token afterwards may #undef it.
+#if defined(ILIBC_ENABLE_PRINTF_MACRO)
+#  define printf(fmt, ...) (::ilibc::print_f<fmt>(__VA_ARGS__))
+#endif
+
+#endif  // ILIBC_STUB_PASSTHROUGH

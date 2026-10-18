@@ -1,0 +1,17 @@
+// cassert
+// The assert macro of ILIBC-HDR-001 section 4 and ILIBC-AST-001 section 3.
+// Intentionally has no include guard (H1): assert is undefined and redefined
+// on every inclusion, so that a change of NDEBUG takes effect on re-include
+// (ILIBC-AST-001 sections 3.1 and 3.3). Declares no names and defines no
+// macro other than assert (H4, H5); under NDEBUG the operand is not
+// evaluated at all (ILIBC-HDR-001 section 4.1).
+#include <ilibc/assert_fail.hpp>
+
+#undef assert
+#ifdef NDEBUG
+#  define assert(...) (static_cast<void>(0))
+#else
+#  define assert(...)                                                           \
+      (static_cast<bool>(__VA_ARGS__) ? static_cast<void>(0)                    \
+                                      : ::__ilibc_assert_fail(#__VA_ARGS__, __FILE__, __LINE__))
+#endif

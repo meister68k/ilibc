@@ -1,0 +1,60 @@
+// cerrno
+// The <errno> macros and the single errno variable of ILIBC-HDR-001
+// section 5. The internal ILIBC_* names are always defined; the public
+// names (EDOM, ERANGE, EINVAL, errno) are suppressed under ILIBC_HOST_TEST
+// because they would collide with the host libc (ILIBC-HDR-001 sections
+// 3.3, 5.1). Header-only: the variable is an inline constinit object with
+// constant initialization (no dynamic initialisation).
+#pragma once
+
+#include <ilibc/config.hpp>
+
+namespace ilibc::detail {
+
+// The one errno variable of the whole machine image (ILIBC-HDR-001 5.2).
+// Callers reset it to 0 before an operation; the library never clears it.
+inline constinit int g_errno = 0;
+
+}  // namespace ilibc::detail
+
+namespace ilibc {
+
+// Clear an error sink and return its address for int* err parameters
+// (ILIBC-ERR-001 section 12). The reference overload is constexpr so a
+// local sink can be cleared during constant evaluation; the global
+// overload writes shared state, hence inline but not constexpr. Both are
+// [[nodiscard]] because discarding the pointer defeats the purpose of
+// the combined clear-and-take-address idiom.
+[[nodiscard]] constexpr int* clear_errno(int& err) noexcept {
+    err = 0;
+    return &err;
+}
+
+[[nodiscard]] inline int* clear_errno() noexcept {
+    return clear_errno(detail::g_errno);
+}
+
+}  // namespace ilibc
+
+// ---------------------------------------------------------------- internal names
+
+#define ILIBC_EDOM   33
+#define ILIBC_ERANGE 34
+#define ILIBC_EINVAL 22
+#define ILIBC_ERRNO  (::ilibc::detail::g_errno)
+
+static_assert(ILIBC_EDOM > 0 && ILIBC_ERANGE > 0 && ILIBC_EINVAL > 0);
+static_assert(ILIBC_EDOM != ILIBC_ERANGE && ILIBC_EDOM != ILIBC_EINVAL
+              && ILIBC_ERANGE != ILIBC_EINVAL);
+
+// ---------------------------------------------------------------- public names
+
+#if !defined(ILIBC_HOST_TEST)
+#  ifdef errno
+#    error "ilibc: errno is already defined by another header."
+#  endif
+#  define EDOM   ILIBC_EDOM
+#  define ERANGE ILIBC_ERANGE
+#  define EINVAL ILIBC_EINVAL
+#  define errno  ILIBC_ERRNO
+#endif

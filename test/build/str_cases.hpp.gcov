@@ -1,0 +1,322 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/str_cases.hpp
+        -:    1:// str_cases.hpp — <cstring> の実行時試験本体(書き込み範囲・アライメント・
+        -:    2:// memmove 重なり)。ホスト差分(H)と E1 実行(R)で共有する(TST §5.2 単一ソース)。
+        -:    3:// spec/ilibc_cstring_spec.md §9 TC-ST-07〜09、spec/ilibc_test_spec.md §5.2/§5.7。
+        -:    4:// 出力は含めない(T5)。各関数は最初の失敗の事例番号を返し、-1 は合格。
+        -:    5:#pragma once
+        -:    6:
+        -:    7:#include <cstring>
+        -:    8:#include <ilibc/config.hpp>
+        -:    9:
+        -:   10:namespace str_cases {
+        -:   11:
+        -:   12:// 試験対象の名前空間(std、またはホスト差分の ilibc_under_test)(T1)
+        -:   13:namespace t = ILIBC_NS;
+        -:   14:
+        -:   15:// 実行時に値を隠し、最適化による畳み込みを防ぐ(T3)
+     7180:   16:inline int vol(int x) {
+     7180:   17:    volatile int v = x;
+     7180:   18:    return v;
+        -:   19:}
+        -:   20:
+        -:   21:// ------------------------------------------------- TC-ST-07: 書き込み範囲
+        -:   22:
+        -:   23:// 前後をカナリア 0xA5、領域を下書き 0x3C で埋める
+        9:   24:inline void fill_pat(unsigned char *buf, int pre, int region, int suf) {
+       81:   25:    for (int i = 0; i < pre; ++i) {
+       72:   26:        buf[i] = 0xA5;
+        -:   27:    }
+      153:   28:    for (int i = 0; i < region; ++i) {
+      144:   29:        buf[pre + i] = 0x3C;
+        -:   30:    }
+       81:   31:    for (int i = 0; i < suf; ++i) {
+       72:   32:        buf[pre + region + i] = 0xA5;
+        -:   33:    }
+        9:   34:}
+        -:   35:
+        -:   36:// 書き込み範囲の検査: 前後のカナリアが保たれ、[pre, pre+want_n) が want、
+        -:   37:// 書き込まれていないはずの [pre+extent, pre+region) が下書きのままか
+        9:   38:inline bool extent_bad(const unsigned char *buf, int pre, int region, int suf, int extent,
+        -:   39:                       const unsigned char *want, int want_n) {
+       81:   40:    for (int i = 0; i < pre; ++i) {
+      72*:   41:        if (buf[i] != 0xA5) return true;
+        -:   42:    }
+       53:   43:    for (int i = 0; i < want_n; ++i) {
+      44*:   44:        if (buf[pre + i] != want[i]) return true;
+        -:   45:    }
+      109:   46:    for (int i = extent; i < region; ++i) {
+     100*:   47:        if (buf[pre + i] != 0x3C) return true;
+        -:   48:    }
+       81:   49:    for (int i = 0; i < suf; ++i) {
+      72*:   50:        if (buf[pre + region + i] != 0xA5) return true;
+        -:   51:    }
+        9:   52:    return false;
+        -:   53:}
+        -:   54:
+        -:   55:// 事例0: strcpy は "ab" + 終端の3バイトだけを書き込む
+        1:   56:inline bool case0_strcpy() {
+        -:   57:    unsigned char buf[32];
+        1:   58:    fill_pat(buf, 8, 16, 8);
+        1:   59:    char *dst = reinterpret_cast<char *>(buf + vol(8));
+        1:   60:    char *r = t::strcpy(dst, "ab");
+        1:   61:    const unsigned char want[3] = {'a', 'b', '\0'};
+       1*:   62:    return r == dst && !extent_bad(buf, 8, 16, 8, 3, want, 3);
+        -:   63:}
+        -:   64:
+        -:   65:// 事例1: strncpy は残りを '\0' で埋めてちょうど n バイトだけ書く(s2が短い)
+        1:   66:inline bool case1_strncpy_pad() {
+        -:   67:    unsigned char buf[32];
+        1:   68:    fill_pat(buf, 8, 16, 8);
+        1:   69:    char *dst = reinterpret_cast<char *>(buf + vol(8));
+        1:   70:    char *r = t::strncpy(dst, "xy", static_cast<std::size_t>(vol(5)));
+        1:   71:    const unsigned char want[5] = {'x', 'y', '\0', '\0', '\0'};
+       1*:   72:    return r == dst && !extent_bad(buf, 8, 16, 8, 5, want, 5);
+        -:   73:}
+        -:   74:
+        -:   75:// 事例2: strncpy は s2 が n 以上のとき終端せず、ちょうど n バイト書く
+        1:   76:inline bool case2_strncpy_noterm() {
+        -:   77:    unsigned char buf[32];
+        1:   78:    fill_pat(buf, 8, 16, 8);
+        1:   79:    char *dst = reinterpret_cast<char *>(buf + vol(8));
+        1:   80:    char *r = t::strncpy(dst, "1234567", static_cast<std::size_t>(vol(5)));
+        1:   81:    const unsigned char want[5] = {'1', '2', '3', '4', '5'};
+       1*:   82:    return r == dst && !extent_bad(buf, 8, 16, 8, 5, want, 5);
+        -:   83:}
+        -:   84:
+        -:   85:// 領域の先頭に "hi\0" を入れて連結系の事例の土台にする
+        3:   86:inline void put_prefix(unsigned char *buf, int pre) {
+        3:   87:    buf[pre + 0] = 'h';
+        3:   88:    buf[pre + 1] = 'i';
+        3:   89:    buf[pre + 2] = '\0';
+        3:   90:}
+        -:   91:
+        -:   92:// 事例3: strcat は strlen(s1) + strlen(s2) + 1 バイトだけ書く
+        1:   93:inline bool case3_strcat() {
+        -:   94:    unsigned char buf[32];
+        1:   95:    fill_pat(buf, 8, 16, 8);
+        1:   96:    put_prefix(buf, 8);
+        1:   97:    char *dst = reinterpret_cast<char *>(buf + vol(8));
+        1:   98:    char *r = t::strcat(dst, "yo");
+        1:   99:    const unsigned char want[5] = {'h', 'i', 'y', 'o', '\0'};
+       1*:  100:    return r == dst && !extent_bad(buf, 8, 16, 8, 5, want, 5);
+        -:  101:}
+        -:  102:
+        -:  103:// 事例4: strncat は最大 n+1 バイト(文字 n + 終端)を末尾に書く
+        1:  104:inline bool case4_strncat() {
+        -:  105:    unsigned char buf[32];
+        1:  106:    fill_pat(buf, 8, 16, 8);
+        1:  107:    put_prefix(buf, 8);
+        1:  108:    char *dst = reinterpret_cast<char *>(buf + vol(8));
+        1:  109:    char *r = t::strncat(dst, "abcd", static_cast<std::size_t>(vol(2)));
+        1:  110:    const unsigned char want[5] = {'h', 'i', 'a', 'b', '\0'};
+       1*:  111:    return r == dst && !extent_bad(buf, 8, 16, 8, 5, want, 5);
+        -:  112:}
+        -:  113:
+        -:  114:// 事例5: strncat の n=0 は終端の書き直し1バイトだけ
+        1:  115:inline bool case5_strncat_zero() {
+        -:  116:    unsigned char buf[32];
+        1:  117:    fill_pat(buf, 8, 16, 8);
+        1:  118:    put_prefix(buf, 8);
+        1:  119:    char *dst = reinterpret_cast<char *>(buf + vol(8));
+        1:  120:    char *r = t::strncat(dst, "zz", static_cast<std::size_t>(vol(0)));
+        1:  121:    const unsigned char want[3] = {'h', 'i', '\0'};
+       1*:  122:    return r == dst && !extent_bad(buf, 8, 16, 8, 3, want, 3);
+        -:  123:}
+        -:  124:
+        -:  125:// 事例6: memcpy は n バイトだけ書く
+        1:  126:inline bool case6_memcpy() {
+        -:  127:    unsigned char buf[32];
+        -:  128:    unsigned char src[8];
+        1:  129:    fill_pat(buf, 8, 16, 8);
+        9:  130:    for (int i = 0; i < 8; ++i) {
+        8:  131:        src[i] = static_cast<unsigned char>(i + 1);
+        -:  132:    }
+        1:  133:    unsigned char *dst = buf + vol(8);
+        -:  134:    unsigned char *r = static_cast<unsigned char *>(
+        1:  135:        t::memcpy(dst, src, static_cast<std::size_t>(vol(6))));
+        1:  136:    const unsigned char want[6] = {1, 2, 3, 4, 5, 6};
+       1*:  137:    return r == dst && !extent_bad(buf, 8, 16, 8, 6, want, 6);
+        -:  138:}
+        -:  139:
+        -:  140:// 事例7: memset は n バイトだけ書く
+        1:  141:inline bool case7_memset() {
+        -:  142:    unsigned char buf[32];
+        1:  143:    fill_pat(buf, 8, 16, 8);
+        1:  144:    unsigned char *dst = buf + vol(8);
+        -:  145:    unsigned char *r = static_cast<unsigned char *>(
+        1:  146:        t::memset(dst, vol(0x7E), static_cast<std::size_t>(vol(6))));
+        1:  147:    const unsigned char want[6] = {0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E};
+       1*:  148:    return r == dst && !extent_bad(buf, 8, 16, 8, 6, want, 6);
+        -:  149:}
+        -:  150:
+        -:  151:// 事例8: memmove(重ならない場合)は n バイトだけ書く
+        1:  152:inline bool case8_memmove() {
+        -:  153:    unsigned char buf[32];
+        -:  154:    unsigned char src[8];
+        1:  155:    fill_pat(buf, 8, 16, 8);
+        9:  156:    for (int i = 0; i < 8; ++i) {
+        8:  157:        src[i] = static_cast<unsigned char>(i + 1);
+        -:  158:    }
+        1:  159:    unsigned char *dst = buf + vol(8);
+        -:  160:    unsigned char *r = static_cast<unsigned char *>(
+        1:  161:        t::memmove(dst, src, static_cast<std::size_t>(vol(6))));
+        1:  162:    const unsigned char want[6] = {1, 2, 3, 4, 5, 6};
+       1*:  163:    return r == dst && !extent_bad(buf, 8, 16, 8, 6, want, 6);
+        -:  164:}
+        -:  165:
+        -:  166:// 書き込み範囲9事例を実行し、最初の失敗の事例番号(0〜8)を返す(-1なら合格)
+        1:  167:inline int tc_st07_first_failure() {
+       1*:  168:    if (!case0_strcpy()) return 0;
+       1*:  169:    if (!case1_strncpy_pad()) return 1;
+       1*:  170:    if (!case2_strncpy_noterm()) return 2;
+       1*:  171:    if (!case3_strcat()) return 3;
+       1*:  172:    if (!case4_strncat()) return 4;
+       1*:  173:    if (!case5_strncat_zero()) return 5;
+       1*:  174:    if (!case6_memcpy()) return 6;
+       1*:  175:    if (!case7_memset()) return 7;
+       1*:  176:    if (!case8_memmove()) return 8;
+        1:  177:    return -1;
+        -:  178:}
+        -:  179:
+        -:  180:// ------------------------------------------------- TC-ST-08: アラインメント
+        -:  181:
+        -:  182:// 24バイト領域に src を設定し、dst を 0x5A で埋める
+      128:  183:inline void align_setup(unsigned char *src, unsigned char *dst) {
+     3200:  184:    for (int i = 0; i < 24; ++i) {
+     3072:  185:        src[i] = static_cast<unsigned char>(i * 5 + 3);
+     3072:  186:        dst[i] = 0x5A;
+        -:  187:    }
+      128:  188:}
+        -:  189:
+        -:  190:// memcpy を先頭オフセット so/d で実行し、手書きの期待配列と一致するか
+       64:  191:inline bool case_memcpy_align(int so, int d) {
+        -:  192:    unsigned char src[24];
+        -:  193:    unsigned char dst[24];
+        -:  194:    unsigned char want[24];
+       64:  195:    align_setup(src, dst);
+     1600:  196:    for (int i = 0; i < 24; ++i) {
+     1536:  197:        want[i] = 0x5A;
+        -:  198:    }
+     1088:  199:    for (int i = 0; i < 16; ++i) {
+     1024:  200:        want[d + i] = src[so + i];
+        -:  201:    }
+       64:  202:    t::memcpy(dst + vol(d), src + vol(so), static_cast<std::size_t>(vol(16)));
+     1600:  203:    for (int i = 0; i < 24; ++i) {
+    1536*:  204:        if (dst[i] != want[i]) return false;
+        -:  205:    }
+       64:  206:    return true;
+        -:  207:}
+        -:  208:
+        -:  209:// memmove(重ならない2配列)を先頭オフセット so/d で実行し、期待配列と一致するか
+       64:  210:inline bool case_memmove_align(int so, int d) {
+        -:  211:    unsigned char src[24];
+        -:  212:    unsigned char dst[24];
+        -:  213:    unsigned char want[24];
+       64:  214:    align_setup(src, dst);
+     1600:  215:    for (int i = 0; i < 24; ++i) {
+     1536:  216:        want[i] = 0x5A;
+        -:  217:    }
+     1088:  218:    for (int i = 0; i < 16; ++i) {
+     1024:  219:        want[d + i] = src[so + i];
+        -:  220:    }
+       64:  221:    t::memmove(dst + vol(d), src + vol(so), static_cast<std::size_t>(vol(16)));
+     1600:  222:    for (int i = 0; i < 24; ++i) {
+    1536*:  223:        if (dst[i] != want[i]) return false;
+        -:  224:    }
+       64:  225:    return true;
+        -:  226:}
+        -:  227:
+        -:  228:// memset を先頭オフセット o で実行し、期待配列と一致するか
+        8:  229:inline bool case_memset_align(int o) {
+        -:  230:    unsigned char dst[24];
+        -:  231:    unsigned char want[24];
+      200:  232:    for (int i = 0; i < 24; ++i) {
+      192:  233:        dst[i] = 0x5A;
+      192:  234:        want[i] = static_cast<unsigned char>((i >= o && i < o + 16) ? 0xC3 : 0x5A);
+        -:  235:    }
+        8:  236:    t::memset(dst + vol(o), vol(0xC3), static_cast<std::size_t>(vol(16)));
+      200:  237:    for (int i = 0; i < 24; ++i) {
+     192*:  238:        if (dst[i] != want[i]) return false;
+        -:  239:    }
+        8:  240:    return true;
+        -:  241:}
+        -:  242:
+        -:  243:// memcmp を先頭オフセット so/d で実行し、手書きの期待値(先頭バイトの差 so-d)と
+        -:  244:// 一致するか(値 a[i]=0x20+i はすべて異なり、先頭で必ず不一致になる)
+       64:  245:inline bool case_memcmp_align(int so, int d) {
+        -:  246:    unsigned char a[24];
+     1600:  247:    for (int i = 0; i < 24; ++i) {
+     1536:  248:        a[i] = static_cast<unsigned char>(0x20 + i);
+        -:  249:    }
+       64:  250:    const int r = t::memcmp(a + vol(so), a + vol(d), static_cast<std::size_t>(vol(16)));
+       64:  251:    return r == so - d;
+        -:  252:}
+        -:  253:
+        -:  254:// memchr を先頭オフセット so で実行し、値(絶対位置 d+3 にだけ存在する)の
+        -:  255:// 位置が手書きの期待どおりか(ウィンドウ外なら nullptr)
+       64:  256:inline bool case_memchr_align(int so, int d) {
+        -:  257:    unsigned char a[24];
+     1600:  258:    for (int i = 0; i < 24; ++i) {
+     1536:  259:        a[i] = static_cast<unsigned char>(0x20 + i);
+        -:  260:    }
+       64:  261:    const int target = 0x20 + d + 3;
+        -:  262:    const unsigned char *r = static_cast<const unsigned char *>(
+       64:  263:        t::memchr(a + vol(so), target, static_cast<std::size_t>(vol(16))));
+       64:  264:    const int at = d + 3;
+       64:  265:    if (at < so || at >= so + 16) {
+       10:  266:        return r == nullptr;
+        -:  267:    }
+       54:  268:    return r == a + at;
+        -:  269:}
+        -:  270:
+        -:  271:// アラインメント試験の失敗番号の符号付きエンコード(TC-ST-08 の case= 表示用):
+        -:  272:// 0〜63=memcpy、64〜127=memmove、128〜135=memset(オフセットのみ)、
+        -:  273:// 136〜199=memcmp、200〜263=memchr(各領域内は so*8+d)
+        1:  274:inline int tc_st08_first_failure() {
+        9:  275:    for (int so = 0; so < 8; ++so) {
+       72:  276:        for (int d = 0; d < 8; ++d) {
+      64*:  277:            if (!case_memcpy_align(so, d)) return so * 8 + d;
+      64*:  278:            if (!case_memmove_align(so, d)) return 64 + so * 8 + d;
+      64*:  279:            if (!case_memcmp_align(so, d)) return 136 + so * 8 + d;
+      64*:  280:            if (!case_memchr_align(so, d)) return 200 + so * 8 + d;
+        -:  281:        }
+       8*:  282:        if (!case_memset_align(so)) return 128 + so;
+        -:  283:    }
+        1:  284:    return -1;
+        -:  285:}
+        -:  286:
+        -:  287:// ------------------------------------------------- TC-ST-09: memmove 重なり
+        -:  288:
+        -:  289:// n=0〜32、コピー先−コピー元のオフセット差 −32〜+32 の全組み合わせを、
+        -:  290:// 一時バッファ経由のコピーと比較する。失敗番号は n*65+(delta+32)(-1は合格)
+        1:  291:inline int tc_st09_first_failure() {
+        -:  292:    unsigned char buf[112];
+        -:  293:    unsigned char tmp[32];
+        -:  294:    unsigned char want[112];
+       34:  295:    for (int n = 0; n <= 32; ++n) {
+     2178:  296:        for (int delta = -32; delta <= 32; ++delta) {
+     2145:  297:            const int s = vol(40);
+     2145:  298:            const int d = s + vol(delta);
+     2145:  299:            const int nn = vol(n);
+   242385:  300:            for (int i = 0; i < 112; ++i) {
+   240240:  301:                buf[i] = static_cast<unsigned char>(i * 13 + 7);
+   240240:  302:                want[i] = buf[i];
+        -:  303:            }
+    36465:  304:            for (int i = 0; i < nn; ++i) {
+    34320:  305:                tmp[i] = buf[s + i];            // 元の内容を退避(参照の基準)
+        -:  306:            }
+     2145:  307:            t::memmove(buf + d, buf + s, static_cast<std::size_t>(nn));
+    36465:  308:            for (int i = 0; i < nn; ++i) {
+    34320:  309:                want[d + i] = tmp[i];
+        -:  310:            }
+   242385:  311:            for (int i = 0; i < 112; ++i) {
+   240240:  312:                if (buf[i] != want[i]) {
+    #####:  313:                    return n * 65 + (delta + 32);
+        -:  314:                }
+        -:  315:            }
+        -:  316:        }
+        -:  317:    }
+        1:  318:    return -1;
+        -:  319:}
+        -:  320:
+        -:  321:}  // namespace str_cases

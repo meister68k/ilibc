@@ -1,0 +1,709 @@
+        -:    0:Source:/mnt/share/disk/synchome/projects/BaTTaX/ilibc/test/common/sl_cases.hpp
+        -:    1:// sl_cases.hpp — <cstdlib> の実行時試験本体(err版規則・errno・基数・空白・
+        -:    2:// 範囲境界・_itoa_s の参照/往復/カナリア)。ホスト差分(H)と E1 実行(R)で
+        -:    3:// 共有する(TST §5.2 単一ソース)。
+        -:    4:// spec/ilibc_cstdlib_spec.md §9 TC-SL-06〜11、22〜24、spec/ilibc_test_spec.md §5.2/§5.7。
+        -:    5:// 出力は含めない(T5)。各関数は最初の失敗の事例番号を返し、-1 は合格。
+        -:    6:// ライブラリの関数には volatile 経由の値を渡し、最適化による畳み込みを避ける(T3)。
+        -:    7:#pragma once
+        -:    8:
+        -:    9:#include <cstdlib>
+        -:   10:#include <climits>
+        -:   11:#include <ilibc/stdlib.hpp>
+        -:   12:
+        -:   13:namespace sl_cases {
+        -:   14:
+        -:   15:// 試験対象の名前空間(std、またはホスト差分の ilibc_under_test)(T1)
+        -:   16:namespace t = ILIBC_NS;
+        -:   17:// 拡張名前空間(err版と _itoa_s。ホスト差分でも名前は変わらない)
+        -:   18:namespace e = ilibc;
+        -:   19:
+        -:   20:// 実行時に値を隠し、最適化による畳み込みを防ぐ(T3)
+  7282221:   21:inline int vol(int x) {
+  7282221:   22:    volatile int v = x;
+  7282221:   23:    return v;
+        -:   24:}
+        -:   25:
+        -:   26:// --------------------------------------------------------------- 入力生成
+        -:   27:
+        -:   28:// xorshift32乱数(TST §5.7.1。既定シードは 0x12345678、reseed で上書き可)
+        -:   29:inline unsigned g_rng = 0x12345678u;
+        -:   30:inline void reseed(unsigned s) { g_rng = (s != 0u) ? s : 1u; }
+  3506144:   31:inline unsigned rnd() {
+  3506144:   32:    unsigned x = g_rng;
+  3506144:   33:    x ^= x << 13;
+  3506144:   34:    x ^= x >> 17;
+  3506144:   35:    x ^= x << 5;
+  3506144:   36:    g_rng = x;
+  3506144:   37:    return x;
+        -:   38:}
+        -:   39:
+        -:   40:// 0以上 n 未満(n > 0)
+     6144:   41:inline int rnd_below(int n) {
+     6144:   42:    return static_cast<int>(rnd() % static_cast<unsigned>(n));
+        -:   43:}
+        -:   44:
+        -:   45:// 64ビット整数 v を radix 進数の文字列 out にする(実装とは独立な参照:
+        -:   46:// 桁を下位から取り出して並べ替える。TC-SL-11/23)。長さを返す(終端を除く)
+  3640989:   47:inline int ref_ulltoa(unsigned long long v, int radix, char *out) {
+        -:   48:    char tmp[72];  // 64bit を基数2で展開しても64桁
+  3640989:   49:    int n = 0;
+  3640989:   50:    if (v == 0ull) {
+       70:   51:        tmp[n] = '0';
+       70:   52:        ++n;
+        -:   53:    }
+ 37320000:   54:    while (v != 0ull) {
+ 33679011:   55:        const int d = static_cast<int>(v % static_cast<unsigned long long>(radix));
+ 33679011:   56:        tmp[n] = static_cast<char>(d < 10 ? '0' + d : 'a' + (d - 10));
+ 33679011:   57:        ++n;
+ 33679011:   58:        v /= static_cast<unsigned long long>(radix);
+        -:   59:    }
+ 37320070:   60:    for (int i = 0; i < n; ++i) {
+ 33679081:   61:        out[i] = tmp[n - 1 - i];
+        -:   62:    }
+  3640989:   63:    out[n] = '\0';
+  3640989:   64:    return n;
+        -:   65:}
+        -:   66:
+        -:   67:// ------------------------------------------------- TC-SL-06: err版の規則
+        -:   68:
+        -:   69:// (a)成功時に *err を書かない (b)範囲外で ERANGE (c)err が nullptr でも動作
+        -:   70:// (d)errno(ILIBC_ERRNO)を変更しない
+        1:   71:inline int tc_sl06_first_failure() {
+        -:   72:    // (a): 番兵値が成功後も不変(strtol/strtoul/atoi/atol すべて)
+        -:   73:    {
+        1:   74:        const int sentinel = 0x12345678;
+        1:   75:        int err = sentinel;
+        1:   76:        char *end = nullptr;
+        1:   77:        char s[4] = { '4', '2', '\0', '\0' };
+        1:   78:        const int base = vol(10);
+        1:   79:        const long v = e::strtol(s, &end, base, &err);
+        1:   80:        if (v != 42L || err != sentinel || end != s + 2) {
+    #####:   81:            return 1;
+        -:   82:        }
+        1:   83:        err = sentinel;
+        1:   84:        const unsigned long u = e::strtoul(s, &end, base, &err);
+        1:   85:        if (u != 42ul || err != sentinel) {
+    #####:   86:            return 2;
+        -:   87:        }
+        1:   88:        err = sentinel;
+       1*:   89:        if (e::atoi(s, &err) != 42 || err != sentinel) {
+    #####:   90:            return 3;
+        -:   91:        }
+        1:   92:        err = sentinel;
+       1*:   93:        if (e::atol(s, &err) != 42L || err != sentinel) {
+    #####:   94:            return 4;
+        -:   95:        }
+        -:   96:    }
+        -:   97:    // (b): 範囲外で *err == ERANGE(結果は LONG_MAX / ULONG_MAX)
+        -:   98:    {
+        1:   99:        int err = 0;
+        1:  100:        char s[12] = { '2', '1', '4', '7', '4', '8', '3', '6', '4', '8', '\0', '\0' };  // LONG_MAX+1
+        1:  101:        char *end = nullptr;
+        1:  102:        const int base = vol(10);
+       1*:  103:        if (e::strtol(s, &end, base, &err) != LONG_MAX || err != ILIBC_ERANGE || end != s + 10) {
+    #####:  104:            return 5;
+        -:  105:        }
+        1:  106:        err = 0;
+        1:  107:        char u[12] = { '4', '2', '9', '4', '9', '6', '7', '2', '9', '6', '\0', '\0' };  // ULONG_MAX+1
+       1*:  108:        if (e::strtoul(u, &end, base, &err) != ULONG_MAX || err != ILIBC_ERANGE) {
+    #####:  109:            return 6;
+        -:  110:        }
+        1:  111:        err = 0;
+       1*:  112:        if (e::atoi(s, &err) != INT_MAX || err != ILIBC_ERANGE) {
+    #####:  113:            return 7;
+        -:  114:        }
+        1:  115:        err = 0;
+        1:  116:        char n[12] = { '-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '9', '\0' };  // LONG_MIN-1
+       1*:  117:        if (e::atol(n, &err) != LONG_MIN || err != ILIBC_ERANGE) {
+    #####:  118:            return 8;
+        -:  119:        }
+        -:  120:    }
+        -:  121:    // (c): err が nullptr でも結果は得られ、範囲外の報告は捨てる
+        -:  122:    {
+        1:  123:        char s[12] = { '2', '1', '4', '7', '4', '8', '3', '6', '4', '8', '\0', '\0' };
+        1:  124:        char *end = nullptr;
+        1:  125:        const int base = vol(10);
+        1:  126:        if (e::strtol(s, &end, base, nullptr) != LONG_MAX) {
+    #####:  127:            return 9;
+        -:  128:        }
+        1:  129:        if (e::strtoul(s, nullptr, base, nullptr) != 2147483648ul) {  // 値としては範囲内
+    #####:  130:            return 10;
+        -:  131:        }
+        1:  132:        if (e::atoi(s, nullptr) != INT_MAX) {
+    #####:  133:            return 11;
+        -:  134:        }
+        1:  135:        if (e::atol(s, nullptr) != LONG_MAX) {
+    #####:  136:            return 12;
+        -:  137:        }
+        -:  138:    }
+        -:  139:    // (d): errno は err版では変更しない(番兵値を設定して全経路を通過)
+        -:  140:    {
+        1:  141:        ILIBC_ERRNO = 0x0BADF00D;
+        1:  142:        int err = 0;
+        1:  143:        char ok[4] = { '4', '2', '\0', '\0' };
+        1:  144:        char ovf[12] = { '2', '1', '4', '7', '4', '8', '3', '6', '4', '8', '\0', '\0' };
+        1:  145:        const int base = vol(10);
+        1:  146:        (void)e::strtol(ok, nullptr, base, &err);
+        1:  147:        (void)e::strtol(ovf, nullptr, base, &err);
+        1:  148:        (void)e::strtoul(ok, nullptr, base, &err);
+        1:  149:        (void)e::strtoul(ovf, nullptr, base, nullptr);
+        1:  150:        (void)e::atoi(ok, &err);
+        1:  151:        (void)e::atoi(ovf, nullptr);
+        1:  152:        (void)e::atol(ok, &err);
+        1:  153:        (void)e::atol(ovf, nullptr);
+        1:  154:        if (ILIBC_ERRNO != 0x0BADF00D) {
+    #####:  155:            return 13;
+        -:  156:        }
+        -:  157:    }
+        1:  158:    return -1;
+        -:  159:}
+        -:  160:
+        -:  161:// ------------------------------------------------- TC-SL-07: std::版のerrno
+        -:  162:
+        -:  163:// (a)成功時に errno 不変 (b)範囲外で ERANGE (c)atoi と strtol の等価
+        1:  164:inline int tc_sl07_first_failure() {
+        -:  165:    // (a): 成功経路で errno が番兵のまま
+        -:  166:    {
+        1:  167:        ILIBC_ERRNO = 0x0BADF00D;
+        1:  168:        char ok[4] = { '4', '2', '\0', '\0' };
+        1:  169:        const int base = vol(10);
+        1:  170:        char *end = nullptr;
+       1*:  171:        if (t::strtol(ok, &end, base) != 42L || ILIBC_ERRNO != 0x0BADF00D || end != ok + 2) {
+    #####:  172:            return 1;
+        -:  173:        }
+       1*:  174:        if (t::strtoul(ok, nullptr, base) != 42ul || ILIBC_ERRNO != 0x0BADF00D) {
+    #####:  175:            return 2;
+        -:  176:        }
+       1*:  177:        if (t::atoi(ok) != 42 || ILIBC_ERRNO != 0x0BADF00D) {
+    #####:  178:            return 3;
+        -:  179:        }
+       1*:  180:        if (t::atol(ok) != 42L || ILIBC_ERRNO != 0x0BADF00D) {
+    #####:  181:            return 4;
+        -:  182:        }
+        -:  183:    }
+        -:  184:    // (b): 範囲外の経路で ERANGE
+        -:  185:    {
+        1:  186:        ILIBC_ERRNO = 0;
+        1:  187:        char ovf[12] = { '2', '1', '4', '7', '4', '8', '3', '6', '4', '8', '\0', '\0' };
+        1:  188:        const int base = vol(10);
+       1*:  189:        if (t::strtol(ovf, nullptr, base) != LONG_MAX || ILIBC_ERRNO != ILIBC_ERANGE) {
+    #####:  190:            return 5;
+        -:  191:        }
+        1:  192:        ILIBC_ERRNO = 0;
+        1:  193:        char ovfu[12] = { '4', '2', '9', '4', '9', '6', '7', '2', '9', '6', '\0', '\0' };
+       1*:  194:        if (t::strtoul(ovfu, nullptr, base) != ULONG_MAX || ILIBC_ERRNO != ILIBC_ERANGE) {
+    #####:  195:            return 6;
+        -:  196:        }
+        1:  197:        ILIBC_ERRNO = 0;
+       1*:  198:        if (t::atoi(ovf) != INT_MAX || ILIBC_ERRNO != ILIBC_ERANGE) {
+    #####:  199:            return 7;
+        -:  200:        }
+        1:  201:        ILIBC_ERRNO = 0;
+        1:  202:        char ovfn[12] = { '-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '9', '\0' };
+       1*:  203:        if (t::atol(ovfn) != LONG_MIN || ILIBC_ERRNO != ILIBC_ERANGE) {
+    #####:  204:            return 8;
+        -:  205:        }
+        -:  206:    }
+        -:  207:    // (c): atoi(s) と (int)strtol(s, nullptr, 10) が戻り値と errno の両方で一致
+        -:  208:    // (仕様の例と、乱数入力)
+        -:  209:    {
+        -:  210:        static const char *const examples[] = {
+        -:  211:            "123", "  -42xyz", "+5", "0x1F", "017", "019", "z", "", "abc", "-",
+        -:  212:            "- 1", "2147483647", "2147483648", "-2147483648", "-2147483649",
+        -:  213:            "99999999999999", "+0", "-0", "0000000000000000000009",
+        -:  214:        };
+        1:  215:        const int nex = static_cast<int>(sizeof examples / sizeof examples[0]);
+       20:  216:        for (int i = 0; i < nex; ++i) {
+        -:  217:            char buf[40];
+       19:  218:            int n = 0;
+      132:  219:            while (examples[i][n] != '\0') {
+      113:  220:                buf[n] = examples[i][n];
+      113:  221:                ++n;
+        -:  222:            }
+       19:  223:            buf[n] = '\0';
+       19:  224:            ILIBC_ERRNO = 0;
+       19:  225:            const int va = t::atoi(buf);
+       19:  226:            const int ea = ILIBC_ERRNO;
+       19:  227:            ILIBC_ERRNO = 0;
+       19:  228:            const long vs = t::strtol(buf, nullptr, vol(10));
+       19:  229:            const int es = ILIBC_ERRNO;
+       19:  230:            if (va != static_cast<int>(vs) || ea != es) {
+    #####:  231:                return 9;
+        -:  232:            }
+        -:  233:        }
+        -:  234:        // 乱数入力: 数字・英字・符号・空白・x・X からなる文字列
+        -:  235:        static const char charset[] = "0123456789+- abcxyzXYZxX";
+      501:  236:        for (int iter = 0; iter < 500; ++iter) {
+        -:  237:            char buf[32];
+      500:  238:            const int n = rnd_below(25);
+     6144:  239:            for (int i = 0; i < n; ++i) {
+     5644:  240:                buf[i] = charset[rnd_below(23)];
+        -:  241:            }
+      500:  242:            buf[n] = '\0';
+      500:  243:            ILIBC_ERRNO = 0;
+      500:  244:            const int va = t::atoi(buf);
+      500:  245:            const int ea = ILIBC_ERRNO;
+      500:  246:            ILIBC_ERRNO = 0;
+      500:  247:            const long vs = t::strtol(buf, nullptr, vol(10));
+      500:  248:            const int es = ILIBC_ERRNO;
+      500:  249:            if (va != static_cast<int>(vs) || ea != es) {
+    #####:  250:                return 10;
+        -:  251:            }
+        -:  252:        }
+        -:  253:    }
+        1:  254:    return -1;
+        -:  255:}
+        -:  256:
+        -:  257:// ------------------------------------------------- TC-SL-08: 基数(実行時)
+        -:  258:
+        -:  259:// base=2〜36 の各基数で基数以上の数字で停止、大小文字非区別、接頭辞の扱い
+        1:  260:inline int tc_sl08_first_failure() {
+        -:  261:    // (a): 各基数で "1"+基数 の数字 の2文字目で停止する
+       36:  262:    for (int base = 2; base <= 36; ++base) {
+        -:  263:        char s[3];
+       35:  264:        s[0] = '1';
+       35:  265:        s[1] = static_cast<char>(base < 10 ? '0' + base : 'a' + (base - 10));
+       35:  266:        s[2] = '\0';
+       35:  267:        int err = 0;
+       35:  268:        char *end = nullptr;
+       35:  269:        const int b = vol(base);
+      35*:  270:        if (e::strtol(s, &end, b, &err) != 1L || end != s + 1 || err != 0) {
+    #####:  271:            return 1;
+        -:  272:        }
+        -:  273:    }
+        -:  274:    // (b): 英字の大文字・小文字を区別しない(base=16: "AbC"、base=36: "Z")
+        -:  275:    {
+        1:  276:        char s1[4] = { 'A', 'b', 'C', '\0' };
+        1:  277:        char s2[2] = { 'Z', '\0' };
+        1:  278:        int err = 0;
+        1:  279:        char *end = nullptr;
+       1*:  280:        if (e::strtol(s1, &end, vol(16), &err) != 0xABCL || end != s1 + 3 || err != 0) {
+    #####:  281:            return 2;
+        -:  282:        }
+       1*:  283:        if (e::strtol(s2, &end, vol(36), &err) != 35L || end != s2 + 1 || err != 0) {
+    #####:  284:            return 3;
+        -:  285:        }
+        -:  286:    }
+        -:  287:    // (c)/(d): 接頭辞 0x/0X(base 0/16)、"0x"単独/"0xg" は "0" のみ、
+        -:  288:    // base=8/10 では "0x" は接頭辞にならない
+        -:  289:    {
+        1:  290:        char p1[5] = { '0', 'x', '1', 'F', '\0' };
+        1:  291:        char p2[5] = { '0', 'X', '1', 'F', '\0' };
+        1:  292:        char p3[3] = { '0', 'x', '\0' };
+        1:  293:        char p4[4] = { '0', 'x', 'g', '\0' };
+        1:  294:        char p5[5] = { '0', 'x', '1', 'g', '\0' };
+        1:  295:        char p6[4] = { '0', '1', '7', '\0' };
+        1:  296:        int err = 0;
+        1:  297:        char *end = nullptr;
+       1*:  298:        if (e::strtol(p1, &end, vol(0), &err) != 31L || end != p1 + 4) {
+    #####:  299:            return 4;
+        -:  300:        }
+       1*:  301:        if (e::strtol(p2, &end, vol(16), &err) != 31L || end != p2 + 4) {
+    #####:  302:            return 5;
+        -:  303:        }
+       1*:  304:        if (e::strtol(p3, &end, vol(16), &err) != 0L || end != p3 + 1) {
+    #####:  305:            return 6;
+        -:  306:        }
+       1*:  307:        if (e::strtol(p4, &end, vol(0), &err) != 0L || end != p4 + 1) {
+    #####:  308:            return 7;
+        -:  309:        }
+       1*:  310:        if (e::strtol(p5, &end, vol(0), &err) != 1L || end != p5 + 3) {
+    #####:  311:            return 8;
+        -:  312:        }
+       1*:  313:        if (e::strtol(p6, &end, vol(0), &err) != 15L || end != p6 + 3) {
+    #####:  314:            return 9;
+        -:  315:        }
+       1*:  316:        if (e::strtol(p1, &end, vol(8), &err) != 0L || end != p1 + 1) {
+    #####:  317:            return 10;
+        -:  318:        }
+       1*:  319:        if (e::strtol(p1, &end, vol(10), &err) != 0L || end != p1 + 1) {
+    #####:  320:            return 11;
+        -:  321:        }
+        -:  322:    }
+        1:  323:    return -1;
+        -:  324:}
+        -:  325:
+        -:  326:// ------------------------------------------------- TC-SL-09: 無効な基数(実行時)
+        -:  327:
+        -:  328:// 無効な基数で 0・*endptr==nptr・エラーなし(D-L1)
+        1:  329:inline int tc_sl09_first_failure() {
+        1:  330:    const int bases[5] = { -1, 1, 37, INT_MIN, INT_MAX };
+        1:  331:    char s[3] = { '4', '2', '\0' };
+        6:  332:    for (int i = 0; i < 5; ++i) {
+        5:  333:        int err = 0;
+        5:  334:        char *end = nullptr;
+        5:  335:        const int b = vol(bases[i]);
+       5*:  336:        if (e::strtol(s, &end, b, &err) != 0L || end != s || err != 0) {
+    #####:  337:            return i + 1;
+        -:  338:        }
+        5:  339:        err = 0;
+        5:  340:        end = nullptr;
+       5*:  341:        if (e::strtoul(s, &end, b, &err) != 0ul || end != s || err != 0) {
+    #####:  342:            return i + 6;
+        -:  343:        }
+        -:  344:    }
+        1:  345:    return -1;
+        -:  346:}
+        -:  347:
+        -:  348:// ------------------------------------------------- TC-SL-10: 空白・符号(実行時)
+        -:  349:
+        1:  350:inline int tc_sl10_first_failure() {
+        -:  351:    // 空白類6文字(0x20、0x09〜0x0D)が読み飛ばされる
+        1:  352:    const char ws[6] = { ' ', '\t', '\n', '\v', '\f', '\r' };
+        7:  353:    for (int i = 0; i < 6; ++i) {
+        -:  354:        char s[4];
+        6:  355:        s[0] = ws[i];
+        6:  356:        s[1] = '4';
+        6:  357:        s[2] = '2';
+        6:  358:        s[3] = '\0';
+        6:  359:        int err = 0;
+        6:  360:        char *end = nullptr;
+       6*:  361:        if (e::strtol(s, &end, vol(10), &err) != 42L || end != s + 3 || err != 0) {
+    #####:  362:            return i + 1;
+        -:  363:        }
+        -:  364:    }
+        -:  365:    // 0x1C〜0x1F は空白ではない(変換なし)
+        1:  366:    const char ctrl[2] = { 0x1C, '\0' };
+        -:  367:    {
+        1:  368:        char s[4] = { ctrl[0], '4', '2', '\0' };
+        1:  369:        int err = 0;
+        1:  370:        char *end = nullptr;
+       1*:  371:        if (e::strtol(s, &end, vol(10), &err) != 0L || end != s || err != 0) {
+    #####:  372:            return 7;
+        -:  373:        }
+        1:  374:        s[0] = 0x1F;
+       1*:  375:        if (e::strtol(s, &end, vol(10), &err) != 0L || end != s || err != 0) {
+    #####:  376:            return 8;
+        -:  377:        }
+        -:  378:    }
+        -:  379:    // 変換なし: "+", "-", "+-1", "- 1", 符号の後の空白
+        -:  380:    static const char *const noconv[] = { "+", "-", "+-1", "- 1", "+\t1", "-  1" };
+        7:  381:    for (int i = 0; i < 6; ++i) {
+        -:  382:        char buf[8];
+        6:  383:        int n = 0;
+       21:  384:        while (noconv[i][n] != '\0') {
+       15:  385:            buf[n] = noconv[i][n];
+       15:  386:            ++n;
+        -:  387:        }
+        6:  388:        buf[n] = '\0';
+        6:  389:        int err = 0;
+        6:  390:        char *end = nullptr;
+       6*:  391:        if (e::strtol(buf, &end, vol(10), &err) != 0L || end != buf || err != 0) {
+    #####:  392:            return 9 + i;
+        -:  393:        }
+        -:  394:    }
+        1:  395:    return -1;
+        -:  396:}
+        -:  397:
+        -:  398:// ------------------------------------------------- TC-SL-11: 範囲の境界
+        -:  399:
+        -:  400:// 各基数(0、2〜36)で LONG_MAX、LONG_MAX+1、LONG_MIN、LONG_MIN-1、
+        -:  401:// ULONG_MAX、ULONG_MAX+1 の文字列を64ビット参照で生成して検証する。
+        -:  402:// 範囲外の後も endptr が有効な数字の終端を指す。
+        1:  403:inline int tc_sl11_first_failure() {
+       37:  404:    for (int bi = 0; bi < 36; ++bi) {
+       36:  405:        const int base = (bi == 0) ? 0 : bi + 1;  // 0, 2..36
+        -:  406:        // base=0 は10進の数字列(先頭0なし)で解釈されるため、展開は10進で行う
+       36:  407:        const int gen_base = (base == 0) ? 10 : base;
+       36:  408:        const unsigned long long long_max = 2147483647ull;
+       36:  409:        const unsigned long long ulong_max = 4294967295ull;
+        -:  410:
+        -:  411:        // 正の境界: LONG_MAX(範囲内)、LONG_MAX+1(範囲外)
+        -:  412:        {
+        -:  413:            char s[72];
+       36:  414:            ref_ulltoa(long_max, gen_base, s);
+       36:  415:            int err = 0;
+       36:  416:            char *end = nullptr;
+       36:  417:            const int bl = vol(base);
+      36*:  418:            if (e::strtol(s, &end, bl, &err) != static_cast<long>(long_max) || err != 0) {
+    #####:  419:                return bi + 1;
+        -:  420:            }
+       36:  421:            const int nmax = ref_ulltoa(long_max + 1ull, gen_base, s);
+       36:  422:            err = 0;
+       36:  423:            const long r = e::strtol(s, &end, bl, &err);
+       36:  424:            if (r != LONG_MAX || err != ILIBC_ERANGE || end != s + nmax) {
+    #####:  425:                return bi + 2;
+        -:  426:            }
+        -:  427:            // strtoul: ULONG_MAX まで範囲内、ULONG_MAX+1 で範囲外
+       36:  428:            const int num = ref_ulltoa(ulong_max, gen_base, s);
+       36:  429:            err = 0;
+      36*:  430:            if (e::strtoul(s, &end, bl, &err) != ULONG_MAX || err != 0 || end != s + num) {
+    #####:  431:                return bi + 3;
+        -:  432:            }
+       36:  433:            const int nover = ref_ulltoa(ulong_max + 1ull, gen_base, s);
+       36:  434:            err = 0;
+       72:  435:            if (e::strtoul(s, &end, bl, &err) != ULONG_MAX || err != ILIBC_ERANGE
+      72*:  436:                || end != s + nover) {
+    #####:  437:                return bi + 4;
+        -:  438:            }
+        -:  439:        }
+        -:  440:        // 負の境界: LONG_MIN(範囲内)、LONG_MIN-1(範囲外)
+        -:  441:        {
+        -:  442:            char s[72];
+       36:  443:            s[0] = '-';
+       36:  444:            const int n1 = ref_ulltoa(2147483648ull, gen_base, s + 1);  // |LONG_MIN|
+       36:  445:            int err = 0;
+       36:  446:            char *end = nullptr;
+       36:  447:            const int bl = vol(base);
+      36*:  448:            if (e::strtol(s, &end, bl, &err) != LONG_MIN || err != 0 || end != s + 1 + n1) {
+    #####:  449:                return bi + 5;
+        -:  450:            }
+       36:  451:            const int n2 = ref_ulltoa(2147483649ull, gen_base, s + 1);  // |LONG_MIN|+1
+       36:  452:            err = 0;
+       72:  453:            if (e::strtol(s, &end, bl, &err) != LONG_MIN || err != ILIBC_ERANGE
+      72*:  454:                || end != s + 1 + n2) {
+    #####:  455:                return bi + 6;
+        -:  456:            }
+        -:  457:            // strtoul の負号は2の補数の否定: "-1" は ULONG_MAX で範囲外ではない
+       36:  458:            char m1[3] = { '-', '1', '\0' };
+       36:  459:            err = 0;
+      36*:  460:            if (e::strtoul(m1, &end, bl, &err) != ULONG_MAX || err != 0 || end != m1 + 2) {
+    #####:  461:                return bi + 7;
+        -:  462:            }
+        -:  463:        }
+        -:  464:    }
+        1:  465:    return -1;
+        -:  466:}
+        -:  467:
+        -:  468:// ------------------------------------------------- TC-SL-22: errno 不変
+        -:  469:
+        -:  470:// 成功とすべての失敗(nullptr、size0、基数の誤り、バッファ不足)で errno が
+        -:  471:// 変化しない。戻り値は 0 / ILIBC_EINVAL / ILIBC_ERANGE のいずれか。
+        1:  472:inline int tc_sl22_first_failure() {
+        -:  473:    char buf[12];
+        -:  474:    int i;
+       13:  475:    for (i = 0; i < 12; ++i) {
+       12:  476:        buf[i] = 'Q';
+        -:  477:    }
+        1:  478:    const int sentinel = 0x0BADF00D;
+        -:  479:
+        -:  480:    // 成功
+        1:  481:    ILIBC_ERRNO = sentinel;
+        1:  482:    int r = e::_itoa_s(vol(-123), buf, 12, vol(10));
+        1:  483:    if (r != 0 || ILIBC_ERRNO != sentinel || buf[0] != '-') {
+    #####:  484:        return 1;
+        -:  485:    }
+        -:  486:    // nullptr
+        1:  487:    ILIBC_ERRNO = sentinel;
+        1:  488:    r = e::_itoa_s(10, static_cast<char *>(nullptr), 8, vol(10));
+        1:  489:    if (r != ILIBC_EINVAL || ILIBC_ERRNO != sentinel) {
+    #####:  490:        return 2;
+        -:  491:    }
+        -:  492:    // size が 0
+        1:  493:    ILIBC_ERRNO = sentinel;
+        1:  494:    r = e::_itoa_s(10, buf, 0, vol(10));
+        1:  495:    if (r != ILIBC_EINVAL || ILIBC_ERRNO != sentinel) {
+    #####:  496:        return 3;
+        -:  497:    }
+        -:  498:    // 基数の誤り
+        1:  499:    ILIBC_ERRNO = sentinel;
+        1:  500:    r = e::_itoa_s(10, buf, 12, vol(1));
+        1:  501:    if (r != ILIBC_EINVAL || ILIBC_ERRNO != sentinel || buf[0] != '\0') {
+    #####:  502:        return 4;
+        -:  503:    }
+        -:  504:    // バッファ不足
+        1:  505:    ILIBC_ERRNO = sentinel;
+        1:  506:    r = e::_itoa_s(-123, buf, 4, vol(10));  // "-123" は size 5 必要
+        1:  507:    if (r != ILIBC_ERANGE || ILIBC_ERRNO != sentinel || buf[0] != '\0') {
+    #####:  508:        return 5;
+        -:  509:    }
+        1:  510:    return -1;
+        -:  511:}
+        -:  512:
+        -:  513:// ------------------------------------------------- TC-SL-23: 参照と往復
+        -:  514:
+        -:  515:// got と want が同一文字列か(終端を含む)
+  3640773:  516:inline bool str_same(const char *a, const char *b) {
+ 37369828:  517:    for (int k = 0; a[k] != '\0' || b[k] != '\0'; ++k) {
+ 33729055:  518:        if (a[k] != b[k]) {
+    #####:  519:            return false;
+        -:  520:        }
+        -:  521:    }
+  3640773:  522:    return true;
+        -:  523:}
+        -:  524:
+        -:  525:// 1値分の変換・参照比較・往復・文字数を検査する(radix は 2〜36、value は
+        -:  526:// 32bit ビット列)。失敗種別を返し、-1 は合格。
+  3640773:  527:inline int sl23_check(int value, int radix) {
+  3640773:  528:    const unsigned long long bit = static_cast<unsigned long long>(
+  3640773:  529:        static_cast<unsigned long>(value));  // C++20: 負値は2の補数のビット列
+        -:  530:    char got[40];
+        -:  531:    char want[48];
+  3640773:  532:    int woff = 0;
+        -:  533:    unsigned long absu;
+        -:  534:    // 基数10の負値だけ '-' + 絶対値。それ以外はビット列のまま展開
+  3640773:  535:    if (radix == 10 && value < 0) {
+    52050:  536:        want[0] = '-';
+    52050:  537:        woff = 1;
+   104099:  538:        absu = (value == INT_MIN) ? 2147483648ul
+    52049:  539:                                  : static_cast<unsigned long>(-static_cast<long>(value));
+        -:  540:    } else {
+  3588723:  541:        absu = static_cast<unsigned long>(value);
+        -:  542:    }
+  3640773:  543:    ref_ulltoa(absu, radix, want + woff);
+  3640773:  544:    const int r = e::_itoa_s(value, got, 40, vol(radix));
+  3640773:  545:    if (r != 0) {
+    #####:  546:        return 1;
+        -:  547:    }
+  3640773:  548:    if (!str_same(got, want)) {
+    #####:  549:        return 2;
+        -:  550:    }
+        -:  551:    // 往復: 基数10 は strtol、それ以外は strtoul で元のビット列に戻る
+  3640773:  552:    if (radix == 10) {
+   104023:  553:        const long back = e::strtol(got, nullptr, vol(10), nullptr);
+   104023:  554:        if (static_cast<unsigned long>(back) != static_cast<unsigned long>(bit)) {
+    #####:  555:            return 3;
+        -:  556:        }
+        -:  557:    } else {
+  3536750:  558:        const unsigned long back = e::strtoul(got, nullptr, vol(radix), nullptr);
+  3536750:  559:        if (back != static_cast<unsigned long>(bit)) {
+    #####:  560:            return 4;
+        -:  561:        }
+        -:  562:    }
+        -:  563:    // (c) 文字数が33以下(基数2の32桁+終端が最大)
+  3640773:  564:    int len = 0;
+ 37369828:  565:    while (got[len] != '\0') {
+ 33729055:  566:        ++len;
+        -:  567:    }
+  3640773:  568:    if (len > 33) {
+    #####:  569:        return 5;
+        -:  570:    }
+  3640773:  571:    return -1;
+        -:  572:}
+        -:  573:
+        -:  574:// 基数2〜36の各基数で、境界値・-2000〜2000・乱数10万個を検証する
+        1:  575:inline int tc_sl23_first_failure() {
+       36:  576:    for (int radix = 2; radix <= 36; ++radix) {
+        -:  577:        // (a) 境界値: 0、±1、基数^n の前後、32bit のビット限界の前後
+        -:  578:        unsigned long bounds[24];
+       35:  579:        int nb = 0;
+       35:  580:        bounds[nb++] = 0ul;
+       35:  581:        bounds[nb++] = 1ul;
+       35:  582:        bounds[nb++] = static_cast<unsigned long>(radix) - 1ul;
+       35:  583:        bounds[nb++] = static_cast<unsigned long>(radix);
+       35:  584:        bounds[nb++] = 2147483647ul;  // LONG_MAX / 正の最大
+       35:  585:        bounds[nb++] = 2147483648ul;  // |LONG_MIN| のビット列(INT_MIN)
+       35:  586:        bounds[nb++] = 4294967294ul;  // ULONG_MAX-1
+       35:  587:        bounds[nb++] = 4294967295ul;  // ULONG_MAX
+        -:  588:        {
+       35:  589:            unsigned long p = 1ul;
+      264:  590:            while (p < 2147483648ul / static_cast<unsigned long>(radix) && nb < 22) {
+      229:  591:                p *= static_cast<unsigned long>(radix);
+      229:  592:                bounds[nb++] = p;
+      229:  593:                if (nb < 22) {
+      229:  594:                    bounds[nb++] = p - 1ul;
+        -:  595:                }
+        -:  596:            }
+        -:  597:        }
+      773:  598:        for (int i = 0; i < nb; ++i) {
+      738:  599:            const int c = sl23_check(static_cast<int>(bounds[i]), radix);
+      738:  600:            if (c >= 0) {
+    #####:  601:                return radix * 10 + c;
+        -:  602:            }
+        -:  603:        }
+        -:  604:        // (a) -2000〜2000 の全値
+   140070:  605:        for (int v = -2000; v <= 2000; ++v) {
+   140035:  606:            const int c = sl23_check(v, radix);
+   140035:  607:            if (c >= 0) {
+    #####:  608:                return 1000 + radix * 10 + c;
+        -:  609:            }
+        -:  610:        }
+        -:  611:        // (a) 乱数 10万個(基数ごと。シードは共有生成器)
+  3500035:  612:        for (int iter = 0; iter < 100000; ++iter) {
+  3500000:  613:            const int value = static_cast<int>(rnd());
+  3500000:  614:            const int c = sl23_check(value, radix);
+  3500000:  615:            if (c >= 0) {
+    #####:  616:                return 2000 + radix * 10 + c;
+        -:  617:            }
+        -:  618:        }
+        -:  619:    }
+        1:  620:    return -1;
+        -:  621:}
+        -:  622:
+        -:  623:
+        -:  624:// ------------------------------------------------- TC-SL-24: 書き込み範囲
+        -:  625:
+        -:  626:// size が必要な大きさちょうど、+1、+8 のとき、前後のカナリア(0xA5)が壊れない。
+        -:  627:// 失敗時に書き込まれるのは buffer[0] のみ(nullptr と size0 では何も書かれない)。
+        1:  628:inline int tc_sl24_first_failure() {
+        -:  629:    // 必要な大きさ: "-2147483648" は12(11文字+終端)
+        -:  630:    static const int sizes[3] = { 12, 13, 20 };  // ちょうど、+1、+8
+        4:  631:    for (int si = 0; si < 3; ++si) {
+        3:  632:        const int size = sizes[si];
+        -:  633:        unsigned char buf[32];
+        3:  634:        int pre = 4;
+        -:  635:        int i;
+       99:  636:        for (i = 0; i < 32; ++i) {
+       96:  637:            buf[i] = 0xA5;
+        -:  638:        }
+        3:  639:        char *p = reinterpret_cast<char *>(buf + pre);
+        -:  640:        // 成功: 全体(前後カナリア含む)が不変、結果は "-2147483648"
+        3:  641:        const int r = e::_itoa_s(INT_MIN, p, static_cast<std::size_t>(size), vol(10));
+        3:  642:        if (r != 0) {
+    #####:  643:            return 1;
+        -:  644:        }
+       15:  645:        for (i = 0; i < pre; ++i) {
+       12:  646:            if (buf[i] != 0xA5) {
+    #####:  647:                return 2;
+        -:  648:            }
+        -:  649:        }
+        -:  650:        static const char want[12] = { '-', '2', '1', '4', '7', '4', '8', '3',
+        -:  651:                                       '6', '4', '8', '\0' };
+       39:  652:        for (i = 0; i < 12; ++i) {
+       36:  653:            if (p[i] != want[i]) {
+    #####:  654:                return 3;
+        -:  655:            }
+        -:  656:        }
+       42:  657:        for (i = pre + size; i < 32; ++i) {
+       39:  658:            if (buf[i] != 0xA5) {
+    #####:  659:                return 4;
+        -:  660:            }
+        -:  661:        }
+        -:  662:    }
+        -:  663:    // 失敗(size 不足): buffer[0] のみ '\0'、他とカナリアは不変
+        -:  664:    {
+        -:  665:        unsigned char buf[32];
+        -:  666:        int i;
+       33:  667:        for (i = 0; i < 32; ++i) {
+       32:  668:            buf[i] = 0xA5;
+        -:  669:        }
+        1:  670:        char *p = reinterpret_cast<char *>(buf + 4);
+        1:  671:        const int r = e::_itoa_s(INT_MIN, p, 11, vol(10));  // 12必要 → ERANGE
+        1:  672:        if (r != ILIBC_ERANGE || p[0] != '\0') {
+    #####:  673:            return 5;
+        -:  674:        }
+        5:  675:        for (i = 0; i < 4; ++i) {
+        4:  676:            if (buf[i] != 0xA5) {
+    #####:  677:                return 6;
+        -:  678:            }
+        -:  679:        }
+       28:  680:        for (i = 5; i < 32; ++i) {
+       27:  681:            if (buf[i] != 0xA5) {
+    #####:  682:                return 7;
+        -:  683:            }
+        -:  684:        }
+        -:  685:    }
+        -:  686:    // nullptr / size0: 何も書かれない(バッファは触れない)
+        -:  687:    {
+        -:  688:        unsigned char buf[8];
+        -:  689:        int i;
+        9:  690:        for (i = 0; i < 8; ++i) {
+        8:  691:            buf[i] = 0xA5;
+        -:  692:        }
+        1:  693:        if (e::_itoa_s(10, static_cast<char *>(nullptr), 8, vol(10)) != ILIBC_EINVAL) {
+    #####:  694:            return 8;
+        -:  695:        }
+        1:  696:        if (e::_itoa_s(10, reinterpret_cast<char *>(buf), 0, vol(10)) != ILIBC_EINVAL) {
+    #####:  697:            return 9;
+        -:  698:        }
+        9:  699:        for (i = 0; i < 8; ++i) {
+        8:  700:            if (buf[i] != 0xA5) {
+    #####:  701:                return 10;
+        -:  702:            }
+        -:  703:        }
+        -:  704:    }
+        1:  705:    return -1;
+        -:  706:}
+        -:  707:
+        -:  708:}  // namespace sl_cases
